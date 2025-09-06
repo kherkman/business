@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Interactive Gantt Chart - Styled</title>
+    <script src="https://cdn.plot.ly/plotly-2.29.1.min.js"></script>
+    <script src="https://unpkg.com/papaparse@5.3.0/papaparse.min.js"></script> <!-- Included if needed for future features, currently not used in Gantt -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* --- Root Variables from graph.html --- */
+        :root {
+            --primary-bg: #1a1c20;
+            --secondary-bg: #111111;
+            --accent-color: #4a90e2;
+            --text-color: #e0e0e0;
+            --dark-text: #e0e0e0;
+            --border-color: #333740;
+            --shadow: rgba(0, 0, 0, 0.2);
+            --control-bg: #25282e; /* Added for general input/select/button background */
+            --button-hover-bg: #357abd; /* Accent button hover */
+            --success-button-bg: #27ae60; /* For 'Add New Task' */
+            --success-button-hover-bg: #2ecc71;
+            --label-file-upload-bg: #2c3e50;
+            --label-file-upload-hover-bg: #34495e;
+
+            /* Gantt specific variables (adjusted for dark theme) */
+            --gantt-table-bg: var(--primary-bg);
+            --gantt-alt-row-bg: var(--secondary-bg);
+            --gantt-hover-row-bg: #2a2c30;
+            --gantt-empty-cell-bg: var(--secondary-bg);
+        }
+
+        /* --- Global Styles from graph.html --- */
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            background-color: var(--secondary-bg);
+            color: var(--dark-text);
+            display: flex;
+            flex-direction: column; /* Stack top-panel and main-content vertically */
+            height: 100vh;
+            overflow: hidden; /* Prevent body scroll, let specific areas scroll */
+        }
+
+        /* --- New Top Panel (formerly sidebar) --- */
+        .top-panel {
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            padding: 15px 30px;
+            box-shadow: 0px 5px 15px var(--shadow);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-height: 120px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .top-panel h1 {
+            margin: 0;
+            font-weight: 600;
+            color: white;
+            font-size: 1.8em;
+            margin-right: 30px;
+            flex-shrink: 0;
+        }
+
+        .top-panel .controls-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            flex-grow: 1;
+        }
+        
+        .top-panel .control-group {
+            border-top: none;
+            padding-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .top-panel .control-group .section-title {
+            margin: 0;
+            font-weight: 600;
+            color: var(--accent-color);
+            flex-shrink: 0;
+            padding-right: 5px;
+        }
+
+        /* --- Input, Select, Button Styles from graph.html --- */
+        select, input:not([type="checkbox"], [type="color"]), button {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            background-color: var(--control-bg);
+            color: var(--text-color);
+            font-family: 'Poppins', sans-serif;
+            font-size: 1em;
+            cursor: pointer;
+            box-sizing: border-box;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        select:focus, input:not([type="checkbox"], [type="color"]):focus {
+            outline: 1px solid var(--accent-color);
+            border-color: var(--accent-color);
+            background-color: #333740;
+        }
+        
+        .top-panel select, .top-panel input:not([type="checkbox"], [type="color"]), .top-panel button {
+            width: auto;
+            min-width: 120px;
+        }
+
+        button {
+            background-color: var(--accent-color);
+            border: none;
+            font-weight: 600;
+            color: white;
+            margin-top: 10px;
+        }
+        .top-panel button {
+            margin-top: 0;
+        }
+
+        #addTaskBtn {
+            background-color: var(--success-button-bg);
+        }
+        #addTaskBtn:hover {
+            background-color: var(--success-button-hover-bg);
+        }
+        button:hover:not(:disabled) {
+            background-color: var(--button-hover-bg);
+        }
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .file-upload-label {
+            display: block;
+            padding: 10px;
+            background-color: var(--label-file-upload-bg);
+            color: white;
+            text-align: center;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        .top-panel .file-upload-label {
+            margin-top: 0;
+            width: auto;
+            min-width: 120px;
+        }
+        .file-upload-label:hover {
+            background-color: var(--label-file-upload-hover-bg);
+        }
+        input[type="color"] {
+            padding: 2px;
+            height: 31px;
+            width: 100%;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            cursor: pointer;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: none; border-radius: 3px; }
+        input[type="color"]::-moz-color-swatch { border: none; border-radius: 3px; }
+
+        /* --- Main Content Area --- */
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--secondary-bg);
+            overflow-y: auto;
+        }
+        
+        .gantt-container {
+            width: 100%;
+            background-color: var(--gantt-table-bg);
+            box-shadow: 0 0 15px var(--shadow);
+            border-radius: 8px;
+            overflow-x: auto;
+            position: relative;
+            padding-bottom: 20px;
+            flex-grow: 1;
+            margin: 0;
+            border: 1px solid var(--border-color);
+        }
+
+        /* --- Gantt Table Specifics --- */
+        .gantt-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .gantt-table th, .gantt-table td {
+            border: 1px solid var(--border-color);
+            padding: 0; /* Default, overridden below for specific cells */
+            text-align: center;
+            vertical-align: middle;
+            color: var(--dark-text);
+        }
+
+        /* Remove default height and nowrap from generic td/th */
+        .gantt-table th, .gantt-table td {
+             white-space: normal; /* Default to allow wrapping */
+        }
+        /* Now specifically apply fixed height and nowrap to cells that need it */
+        .gantt-table th:not(.task-name-header):not(.date-input-header):not(.color-input-header), /* Day headers */
+        .date-input-cell,
+        .color-input-cell,
+        .time-cell {
+            height: 35px;
+            white-space: nowrap; /* Prevent wrapping in these cells */
+        }
+
+
+        .gantt-table th {
+            background-color: var(--control-bg);
+            font-weight: 600;
+            color: var(--text-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        #date-header-row-week th {
+            font-size: 0.9em;
+            padding: 5px 0;
+            border-bottom: none;
+        }
+
+        #date-header-row-day th {
+            font-size: 0.8em;
+            color: var(--accent-color);
+            height: 25px; /* Day headers are shorter */
+            width: var(--day-cell-width);
+            white-space: nowrap; /* Explicitly prevent wrapping in day headers */
+        }
+
+        #date-header-row-day th.weekend {
+            background-color: #442222;
+            color: #ff9999;
+        }
+
+        .task-name-header, .date-input-header, .color-input-header {
+            text-align: left;
+            padding: 8px;
+            background-color: var(--primary-bg);
+            color: white;
+            border-bottom: 1px solid var(--border-color);
+            white-space: normal; /* Allow header text to wrap */
+        }
+
+        .task-name-header {
+            width: 180px;
+            min-width: 180px;
+        }
+
+        .date-input-header {
+            width: 150px; /* Wider date column header */
+            min-width: 150px;
+        }
+        .color-input-header {
+            width: 60px;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .task-name-cell {
+            text-align: left;
+            padding: 8px;
+            font-weight: 500;
+            cursor: grab;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            white-space: normal; /* Allow task name text to wrap */
+            height: auto; /* Allow height to adjust based on content */
+            vertical-align: top; /* Align text to the top of the cell */
+        }
+
+        .task-name-cell:focus {
+            outline: 1px solid var(--accent-color);
+            background-color: #333740;
+        }
+
+        .date-input-cell {
+            padding: 0px 5px;
+            background-color: var(--control-bg);
+            width: 150px; /* Wider date column cell */
+            min-width: 150px;
+        }
+
+        .date-input-cell input {
+            background: transparent;
+            color: var(--text-color);
+        }
+        .date-input-cell input:focus {
+            background-color: #333740;
+        }
+
+        .color-input-cell {
+            padding: 0px 5px;
+            background-color: var(--control-bg);
+        }
+
+
+        .gantt-table tbody tr:nth-child(even) {
+            background-color: var(--gantt-alt-row-bg);
+        }
+        .gantt-table tbody tr:nth-child(odd) {
+             background-color: var(--primary-bg);
+        }
+
+        .gantt-table tbody tr:hover {
+            background-color: var(--gantt-hover-row-bg);
+        }
+
+        /* Drag-and-drop for rows */
+        .gantt-table tbody tr.dragging {
+            opacity: 0.7;
+            background-color: #1f3a5f;
+        }
+
+        .gantt-table tbody tr.drop-target-above {
+            border-top: 2px solid var(--accent-color);
+        }
+        .gantt-table tbody tr.drop-target-below {
+            border-bottom: 2px solid var(--accent-color);
+        }
+
+
+        .time-cell {
+            padding: 0;
+            position: relative;
+        }
+
+        .gantt-bar {
+            background-color: #4CAF50;
+            height: 80%;
+            margin: auto;
+            border-radius: 3px;
+            box-shadow: 0 1px 2px var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.75em;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            cursor: grab;
+            position: relative;
+            left: 0;
+            z-index: 5;
+        }
+
+        .gantt-bar:focus {
+            outline: 1px solid var(--accent-color);
+        }
+
+        .gantt-bar.is-dragging-bar {
+            opacity: 0.8;
+            cursor: grabbing;
+            box-shadow: 0 4px 8px var(--shadow);
+            z-index: 15;
+        }
+
+        .empty-cell {
+            background-color: var(--gantt-empty-cell-bg);
+            border-color: var(--border-color);
+        }
+
+        .now-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #e74c3c;
+            z-index: 20;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+
+<div class="top-panel">
+    <h1>Gantt Chart</h1>
+    <div class="controls-wrapper">
+        <div class="control-group">
+            <button id="addTaskBtn">Add New Task</button>
+        </div>
+
+        <div class="control-group">
+            <span class="section-title">Data Management</span>
+            <button id="saveDataBtn">Save Gantt Data</button>
+            <label for="loadDataInput" class="file-upload-label">Load Gantt Data</label>
+            <input type="file" id="loadDataInput" accept=".json">
+        </div>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="gantt-container" id="ganttContainer">
+        <table class="gantt-table">
+            <thead>
+                <tr id="date-header-row-week">
+                    <th class="task-name-header" rowspan="2">Task Name</th>
+                    <th class="date-input-header" colspan="2" rowspan="2">Dates</th>
+                    <th class="color-input-header" rowspan="2">Color</th>
+                    <!-- Week headers generated by JS -->
+                </tr>
+                <tr id="date-header-row-day">
+                    <!-- Day headers generated by JS -->
+                </tr>
+            </thead>
+            <tbody id="gantt-tbody">
+                <!-- Task rows generated by JS -->
+            </tbody>
+        </table>
+        <div id="now-line" class="now-line"></div>
+    </div>
+</div>
+
+<script>
+    // --- Configuration ---
+    const MIN_CHART_DAYS = 60; // Minimum number of days displayed in the timeline if no tasks extend further
+    const DAY_CELL_WIDTH_PX = 25; // Width of each daily column in pixels
+    const DATE_COLUMN_WIDTH_PX = 150; // New wider width for date input columns
+
+    // --- Initial Data ---
+    let tasks = [
+        { id: 'task1', name: 'Design UI/UX', barText: 'Design (3 days)', start: '2025-08-01', end: '2025-08-03', color: '#4a90e2' },
+        { id: 'task2', name: 'Develop Frontend', barText: 'Frontend Dev (6 days)', start: '2025-09-02', end: '2025-09-07', color: '#2ecc71' },
+        { id: 'task3', name: 'Develop Backend API', barText: 'Backend Dev (5 days)', start: '2025-09-05', end: '2025-09-09', color: '#f1c40f' },
+        { id: 'task4', name: 'Integration Testing', barText: 'Testing (4 days)', start: '2025-09-10', end: '2025-09-13', color: '#e74c3c' },
+        { id: 'task5', name: 'Deployment', barText: 'Deployment (2 days)', start: '2025-09-16', end: '2025-09-17', color: '#9b59b6' },
+        { id: 'task6', name: 'Post-Launch Support', barText: 'Support (5 days)', start: '2025-09-18', end: '2025-09-22', color: '#e67e22' },
+    ];
+
+    // --- Global Variables ---
+    let chartStartDate; // This will now be dynamically determined
+    let numDaysInChart; // This will be dynamic
+
+    // --- DOM Elements ---
+    const ganttTbody = document.getElementById('gantt-tbody');
+    const dateHeaderRowWeek = document.getElementById('date-header-row-week');
+    const dateHeaderRowDay = document.getElementById('date-header-row-day');
+    const ganttContainer = document.getElementById('ganttContainer');
+    const nowLine = document.getElementById('now-line');
+    const saveDataBtn = document.getElementById('saveDataBtn');
+    const loadDataInput = document.getElementById('loadDataInput');
+    const addTaskBtn = document.getElementById('addTaskBtn');
+
+    // --- Global Drag Variables ---
+    let draggedRow = null; // For task reordering
+    let draggedBar = null; // For bar date adjustment
+    let initialMouseX = 0;
+    let barDragTaskId = null;
+    let barDragOriginalStart = null;
+    let barDragOriginalEnd = null;
+
+
+    // --- Helper Functions ---
+    function parseDate(dateStr) {
+        const date = new Date(dateStr + 'T00:00:00');
+        if (isNaN(date.getTime())) {
+            console.error("Invalid date string provided:", dateStr);
+            return new Date(0); // Return a fallback invalid date
+        }
+        return date;
+    }
+
+    function formatDate(date) {
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function getDayDifference(date1, date2) {
+        const oneDay = 24 * 60 * 60 * 1000;
+        const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
+        const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
+        return Math.round(Math.abs((d1.getTime() - d2.getTime()) / oneDay));
+    }
+
+    function getDayOfWeek(date) {
+        return new Date(date).getDay();
+    }
+
+    function getUniqueId() {
+        return 'task-' + Date.now() + Math.random().toString(36).substr(2, 9);
+    }
+
+    // --- Timeline Range Calculation ---
+    function calculateChartTimelineRange() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let earliestTaskStartDate = today; // Default if no tasks
+        let latestTaskEndDate = today;     // Default if no tasks
+
+        if (tasks.length > 0) {
+            // Find the earliest start date among all tasks
+            earliestTaskStartDate = parseDate(tasks[0].start);
+            tasks.forEach(task => {
+                const taskStart = parseDate(task.start);
+                if (taskStart.getTime() < earliestTaskStartDate.getTime()) {
+                    earliestTaskStartDate = taskStart;
+                }
+            });
+
+            // Find the latest end date among all tasks
+            latestTaskEndDate = parseDate(tasks[0].end);
+            tasks.forEach(task => {
+                const taskEnd = parseDate(task.end);
+                if (taskEnd.getTime() > latestTaskEndDate.getTime()) {
+                    latestTaskEndDate = taskEnd;
+                }
+            });
+        } else {
+            // If no tasks, ensure chart starts from today and lasts MIN_CHART_DAYS
+            chartStartDate = today;
+            numDaysInChart = MIN_CHART_DAYS;
+            console.log(`[Calculate] No tasks. Chart Start: ${formatDate(chartStartDate)}, numDaysInChart: ${numDaysInChart}`);
+            return;
+        }
+
+        // Set chartStartDate to the earliest task start date
+        chartStartDate = earliestTaskStartDate;
+
+        // Calculate days needed to cover all tasks from the dynamic chartStartDate
+        // Ensure chart covers from chartStartDate up to the latestTaskEndDate
+        let requiredDaysForTasks = getDayDifference(chartStartDate, latestTaskEndDate) + 1;
+
+        // Ensure a minimum number of days are always displayed
+        numDaysInChart = Math.max(MIN_CHART_DAYS, requiredDaysForTasks);
+
+        console.log(`[Calculate] Earliest Task Start: ${formatDate(earliestTaskStartDate)}, Latest Task End: ${formatDate(latestTaskEndDate)}, Required Days: ${requiredDaysForTasks}, Final numDaysInChart: ${numDaysInChart}`);
+
+        document.documentElement.style.setProperty('--day-cell-width', `${DAY_CELL_WIDTH_PX}px`);
+    }
+
+    // --- Rendering Logic ---
+    function generateTimelineHeaders() {
+        console.log(`[Headers] Generating headers for ${numDaysInChart} days, starting from ${formatDate(chartStartDate)}.`);
+        dateHeaderRowWeek.querySelectorAll(':not(.task-name-header, .date-input-header, .color-input-header)').forEach(el => el.remove());
+        dateHeaderRowDay.querySelectorAll('th').forEach(el => el.remove());
+
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+        // 1. Generate Day Headers
+        for (let i = 0; i < numDaysInChart; i++) {
+            const dayHeader = document.createElement('th');
+            const dayDate = new Date(chartStartDate);
+            dayDate.setDate(chartStartDate.getDate() + i);
+
+            dayHeader.textContent = dayNames[getDayOfWeek(dayDate)];
+            if (getDayOfWeek(dayDate) === 0 || getDayOfWeek(dayDate) === 6) { // Sunday or Saturday
+                dayHeader.classList.add('weekend');
+            }
+            dateHeaderRowDay.appendChild(dayHeader);
+        }
+
+        // 2. Generate Week Headers: Week 1 starts from the dynamically determined chartStartDate
+        let currentDateForWeekHeader = new Date(chartStartDate);
+        let weekCount = 0;
+        let daysProcessedForWeeks = 0;
+
+        while (daysProcessedForWeeks < numDaysInChart) {
+            const weekHeader = document.createElement('th');
+            let daysInThisWeekHeader = Math.min(7, numDaysInChart - daysProcessedForWeeks);
+
+            weekHeader.colSpan = daysInThisWeekHeader;
+
+            // Format: DD-MM
+            const formattedDate = `${currentDateForWeekHeader.getDate().toString().padStart(2, '0')}-${(currentDateForWeekHeader.getMonth() + 1).toString().padStart(2, '0')}`;
+            weekHeader.textContent = `Week ${weekCount + 1} (${formattedDate})`;
+            dateHeaderRowWeek.appendChild(weekHeader);
+
+            currentDateForWeekHeader.setDate(currentDateForWeekHeader.getDate() + daysInThisWeekHeader);
+            daysProcessedForWeeks += daysInThisWeekHeader;
+            weekCount++;
+        }
+
+        const fixedColumnsWidth = 180 + (2 * DATE_COLUMN_WIDTH_PX) + 60; // Task Name + 2 Date Inputs + Color
+        ganttTbody.closest('.gantt-table').style.minWidth = `${fixedColumnsWidth + (numDaysInChart * DAY_CELL_WIDTH_PX)}px`;
+    }
+
+
+    function renderGanttChart() {
+        console.log("[Render] Re-rendering Gantt chart...");
+        ganttTbody.innerHTML = '';
+        calculateChartTimelineRange();
+        generateTimelineHeaders();
+
+        tasks.forEach(task => {
+            const taskRow = document.createElement('tr');
+            taskRow.id = `row-${task.id}`;
+            taskRow.dataset.taskId = task.id;
+            taskRow.draggable = true;
+
+            const taskNameCell = document.createElement('td');
+            taskNameCell.classList.add('task-name-cell');
+            taskNameCell.contentEditable = 'true';
+            taskNameCell.textContent = task.name;
+            taskNameCell.dataset.taskId = task.id;
+            taskNameCell.addEventListener('input', (e) => {
+                task.name = e.target.textContent;
+            });
+            taskRow.appendChild(taskNameCell);
+
+            const startDateCell = document.createElement('td');
+            startDateCell.classList.add('date-input-cell');
+            const startDateInput = document.createElement('input');
+            startDateInput.type = 'date';
+            startDateInput.value = task.start;
+            startDateInput.dataset.taskId = task.id;
+            startDateInput.addEventListener('change', (e) => {
+                task.start = e.target.value;
+                renderGanttChart();
+            });
+            startDateCell.appendChild(startDateInput);
+            taskRow.appendChild(startDateCell);
+
+            const endDateCell = document.createElement('td');
+            endDateCell.classList.add('date-input-cell');
+            const endDateInput = document.createElement('input');
+            endDateInput.type = 'date';
+            endDateInput.value = task.end;
+            endDateInput.dataset.taskId = task.id;
+            endDateInput.addEventListener('change', (e) => {
+                task.end = e.target.value;
+                renderGanttChart();
+            });
+            endDateCell.appendChild(endDateInput);
+            taskRow.appendChild(endDateCell);
+
+            const colorCell = document.createElement('td');
+            colorCell.classList.add('color-input-cell');
+            const colorInput = document.createElement('input');
+            colorInput.type = 'color';
+            colorInput.value = task.color || '#4a90e2';
+            colorInput.dataset.taskId = task.id;
+            colorInput.addEventListener('input', (e) => {
+                task.color = e.target.value;
+                const bar = document.querySelector(`#row-${task.id} .gantt-bar`);
+                if (bar) bar.style.backgroundColor = task.color;
+            });
+            colorCell.appendChild(colorInput);
+            taskRow.appendChild(colorCell);
+
+
+            const taskStartDate = parseDate(task.start);
+            const taskEndDate = parseDate(task.end);
+
+            if (isNaN(taskStartDate.getTime()) || isNaN(taskEndDate.getTime()) || taskStartDate > taskEndDate) {
+                console.warn(`Invalid dates for task ${task.id}: ${task.start} - ${task.end}. Skipping bar rendering.`);
+                for (let i = 0; i < numDaysInChart; i++) {
+                    const emptyCell = document.createElement('td');
+                    emptyCell.classList.add('empty-cell');
+                    taskRow.appendChild(emptyCell);
+                }
+                ganttTbody.appendChild(taskRow);
+                return;
+            }
+
+            let startOffsetDays = getDayDifference(chartStartDate, taskStartDate);
+            let durationDays = getDayDifference(taskStartDate, taskEndDate) + 1;
+
+            const chartVisibleEndDate = new Date(chartStartDate);
+            chartVisibleEndDate.setDate(chartStartDate.getDate() + numDaysInChart -1);
+
+
+            if (taskEndDate < chartStartDate || taskStartDate > chartVisibleEndDate) {
+                for (let i = 0; i < numDaysInChart; i++) {
+                    const emptyCell = document.createElement('td');
+                    emptyCell.classList.add('empty-cell');
+                    taskRow.appendChild(emptyCell);
+                }
+                ganttTbody.appendChild(taskRow);
+                return;
+            }
+
+            let effectiveStartOffsetDays = Math.max(0, startOffsetDays);
+            let effectiveDurationDays = durationDays;
+
+            if (taskStartDate < chartStartDate) {
+                effectiveDurationDays -= getDayDifference(taskStartDate, chartStartDate);
+            }
+            if (taskEndDate > chartVisibleEndDate) {
+                effectiveDurationDays -= getDayDifference(chartVisibleEndDate, taskEndDate);
+            }
+
+
+            for (let i = 0; i < effectiveStartOffsetDays; i++) {
+                const emptyCell = document.createElement('td');
+                emptyCell.classList.add('empty-cell');
+                taskRow.appendChild(emptyCell);
+            }
+
+            const barCell = document.createElement('td');
+            barCell.classList.add('time-cell');
+            barCell.colSpan = effectiveDurationDays;
+
+            const ganttBar = document.createElement('div');
+            ganttBar.classList.add('gantt-bar');
+            ganttBar.contentEditable = 'true';
+            
+            // --- DYNAMIC BAR TEXT UPDATE ---
+            let currentBarText = task.barText;
+            const daysRegex = /\s\((\d+)\sdays\)$/; // Matches "(X days)" at the end
+            const match = currentBarText.match(daysRegex);
+
+            if (match) {
+                // If "(X days)" exists, replace it
+                const baseText = currentBarText.substring(0, match.index);
+                task.barText = `${baseText} (${durationDays} days)`;
+            } else {
+                // If "(X days)" doesn't exist, append it
+                task.barText = `${currentBarText} (${durationDays} days)`;
+            }
+            ganttBar.textContent = task.barText;
+            // --- END DYNAMIC BAR TEXT UPDATE ---
+
+            ganttBar.dataset.taskId = task.id;
+            ganttBar.style.backgroundColor = task.color;
+            ganttBar.addEventListener('input', (e) => {
+                // When user manually edits bar text, update task object (but days will auto-update on next render)
+                task.barText = e.target.textContent;
+            });
+
+            ganttBar.addEventListener('mousedown', startBarDrag);
+            ganttBar.addEventListener('mouseup', endBarDrag);
+            ganttBar.addEventListener('mouseleave', (e) => {
+                if (draggedBar) {
+                    draggedBar.classList.remove('is-dragging-bar');
+                    draggedBar.style.left = '0px';
+                    draggedBar = null;
+                }
+            });
+
+            barCell.appendChild(ganttBar);
+            taskRow.appendChild(barCell);
+
+            const cellsAfterBar = numDaysInChart - effectiveStartOffsetDays - effectiveDurationDays;
+            for (let i = 0; i < cellsAfterBar; i++) {
+                const emptyCell = document.createElement('td');
+                emptyCell.classList.add('empty-cell');
+                taskRow.appendChild(emptyCell);
+            }
+
+            ganttTbody.appendChild(taskRow);
+        });
+
+        addDragAndDropListenersToRows();
+        positionNowLine();
+    }
+
+    function positionNowLine() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const chartVisibleEndDate = new Date(chartStartDate);
+        chartVisibleEndDate.setDate(chartStartDate.getDate() + numDaysInChart - 1);
+
+        if (today.getTime() < chartStartDate.getTime() || today.getTime() > chartVisibleEndDate.getTime()) {
+            nowLine.style.display = 'none';
+            return;
+        } else {
+            nowLine.style.display = 'block';
+        }
+
+        const daysSinceChartStart = getDayDifference(chartStartDate, today);
+
+        const fixedColumnsWidth = 180 + (2 * DATE_COLUMN_WIDTH_PX) + 60; // Task Name + 2 Date Inputs + Color
+        nowLine.style.left = `${fixedColumnsWidth + (daysSinceChartStart * DAY_CELL_WIDTH_PX)}px`;
+        nowLine.style.height = `${ganttTbody.offsetHeight}px`;
+        nowLine.style.top = `${ganttTbody.offsetTop}px`;
+    }
+
+    // --- Task Row Drag & Drop (Reordering) ---
+    function addDragAndDropListenersToRows() {
+        const rows = ganttTbody.querySelectorAll('tr');
+
+        rows.forEach(row => {
+            row.addEventListener('dragstart', (e) => {
+                draggedRow = row;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', row.dataset.taskId);
+                row.classList.add('dragging');
+            });
+
+            row.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                if (row !== draggedRow) {
+                    row.classList.add('drop-target-above');
+                }
+            });
+
+            row.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                const bounding = row.getBoundingClientRect();
+                const offset = e.clientY - bounding.top;
+                if (offset < bounding.height / 2) {
+                    row.classList.remove('drop-target-below');
+                    row.classList.add('drop-target-above');
+                } else {
+                    row.classList.remove('drop-target-above');
+                    row.classList.add('drop-target-below');
+                }
+            });
+
+            row.addEventListener('dragleave', () => {
+                row.classList.remove('drop-target-above', 'drop-target-below');
+            });
+
+            row.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (draggedRow && row !== draggedRow) {
+                    const draggedTaskId = draggedRow.dataset.taskId;
+                    const targetTaskId = row.dataset.taskId;
+
+                    const draggedIndex = tasks.findIndex(t => t.id === draggedTaskId);
+                    const targetIndex = tasks.findIndex(t => t.id === targetTaskId);
+
+                    if (draggedIndex > -1 && targetIndex > -1) {
+                        const [removed] = tasks.splice(draggedIndex, 1);
+
+                        const bounding = row.getBoundingClientRect();
+                        const offset = e.clientY - bounding.top;
+                        let insertIndex = targetIndex;
+                        if (offset >= bounding.height / 2 && draggedIndex < targetIndex) {
+                            insertIndex = targetIndex;
+                        } else if (offset >= bounding.height / 2 && draggedIndex > targetIndex) {
+                            insertIndex = targetIndex + 1;
+                        } else if (offset < bounding.height / 2 && draggedIndex > targetIndex) {
+                            insertIndex = targetIndex;
+                        } else if (offset < bounding.height / 2 && draggedIndex < targetIndex) {
+                            insertIndex = targetIndex;
+                        }
+                        
+                        if (draggedIndex < targetIndex && insertIndex === targetIndex) {
+                            insertIndex--;
+                        }
+
+
+                        tasks.splice(insertIndex, 0, removed);
+                        renderGanttChart();
+                    }
+                }
+                row.classList.remove('drop-target-above', 'drop-target-below');
+            });
+
+            row.addEventListener('dragend', () => {
+                draggedRow.classList.remove('dragging');
+                draggedRow = null;
+                rows.forEach(r => r.classList.remove('drop-target-above', 'drop-target-below'));
+            });
+        });
+    }
+
+
+    // --- Gantt Bar Drag & Drop (Date Adjustment) ---
+    function startBarDrag(e) {
+        if (e.target.contentEditable === 'true') {
+            return;
+        }
+        e.preventDefault();
+        draggedBar = e.target;
+        barDragTaskId = draggedBar.dataset.taskId;
+        const task = tasks.find(t => t.id === barDragTaskId);
+        if (!task) return;
+
+        barDragOriginalStart = parseDate(task.start);
+        barDragOriginalEnd = parseDate(task.end);
+        initialMouseX = e.clientX;
+
+        draggedBar.classList.add('is-dragging-bar');
+
+        document.addEventListener('mousemove', dragBar);
+        document.addEventListener('mouseup', endBarDrag);
+    }
+
+    function dragBar(e) {
+        if (!draggedBar) return;
+        const deltaX = e.clientX - initialMouseX;
+        draggedBar.style.left = `${deltaX}px`;
+    }
+
+    function endBarDrag(e) {
+        if (!draggedBar) return;
+
+        document.removeEventListener('mousemove', dragBar);
+        document.removeEventListener('mouseup', endBarDrag);
+
+        const finalDeltaX = e.clientX - initialMouseX;
+        const daysMoved = Math.round(finalDeltaX / DAY_CELL_WIDTH_PX);
+
+        const task = tasks.find(t => t.id === barDragTaskId);
+        if (task) {
+            const newStartDate = new Date(barDragOriginalStart);
+            newStartDate.setDate(barDragOriginalStart.getDate() + daysMoved);
+
+            const newEndDate = new Date(barDragOriginalEnd);
+            newEndDate.setDate(barDragOriginalEnd.getDate() + daysMoved);
+
+            const veryEarlyDate = new Date(1000, 0, 1);
+            if (newStartDate.getTime() < veryEarlyDate.getTime()) {
+                newStartDate.setTime(veryEarlyDate.getTime());
+                newEndDate.setTime(veryEarlyDate.getTime() + (barDragOriginalEnd.getTime() - barDragOriginalStart.getTime()));
+            }
+
+            task.start = formatDate(newStartDate);
+            task.end = formatDate(newEndDate);
+            renderGanttChart();
+        }
+
+        draggedBar.classList.remove('is-dragging-bar');
+        draggedBar.style.left = '0px';
+        draggedBar = null;
+        barDragTaskId = null;
+        barDragOriginalStart = null;
+        barDragOriginalEnd = null;
+        initialMouseX = 0;
+    }
+
+
+    // --- Save/Load Functions ---
+    function saveData() {
+        const data = {
+            tasks: tasks
+        };
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'gantt_data.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function loadData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const loadedData = JSON.parse(e.target.result);
+                if (loadedData.tasks && Array.isArray(loadedData.tasks)) {
+                    tasks = loadedData.tasks;
+                    renderGanttChart();
+                } else {
+                    alert('Invalid data structure in JSON file. Expected a "tasks" array.');
+                }
+            } catch (error) {
+                alert('Error parsing JSON file: ' + error.message);
+                console.error('Error parsing JSON:', error);
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function addNewTask() {
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+
+        // Calculate duration for the new task
+        const duration = getDayDifference(today, tomorrow) + 1;
+
+        const newTask = {
+            id: getUniqueId(),
+            name: 'New Task',
+            barText: `New Task (${duration} days)`, // Dynamically set initial barText
+            start: formatDate(today),
+            end: formatDate(tomorrow),
+            color: '#4a90e2',
+        };
+        tasks.push(newTask);
+        renderGanttChart();
+        document.getElementById(`row-${newTask.id}`).scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+
+
+    // --- Event Listeners ---
+    saveDataBtn.addEventListener('click', saveData);
+    loadDataInput.addEventListener('change', loadData);
+    addTaskBtn.addEventListener('click', addNewTask);
+
+    // Initial render on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        renderGanttChart();
+        setInterval(positionNowLine, 60 * 60 * 1000);
+        window.addEventListener('resize', positionNowLine);
+    });
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced 3D Graphing Tool with FFT Forecast</title>
+    <script src="https://cdn.plot.ly/plotly-2.29.1.min.js"></script>
+    <script src="https://unpkg.com/papaparse@5.3.0/papaparse.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #1a1c20; --secondary-bg: #111111; --accent-color: #4a90e2;
+            --text-color: #e0e0e0; --dark-text: #e0e0e0; --border-color: #333740; --shadow: rgba(0, 0, 0, 0.2);
+        }
+        body { font-family: 'Poppins', sans-serif; margin: 0; background-color: var(--secondary-bg); color: var(--dark-text); display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 320px; background-color: var(--primary-bg); color: var(--text-color); padding: 30px; box-shadow: 5px 0px 15px var(--shadow); z-index: 10; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+        .sidebar h2 { text-align: center; margin-top: 0; font-weight: 600; color: white; }
+        .control-group { border-top: 1px solid var(--border-color); padding-top: 20px; }
+        .control-group h3 { margin-top:0; color: var(--accent-color); }
+        .control-group label { display: block; font-size: 0.9em; margin-bottom: 10px; }
+        .main-content { flex-grow: 1; padding: 20px; display: flex; }
+        #plot { width: 100%; height: 100%; }
+        select, input, button { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid var(--border-color); background-color: #25282e; color: var(--text-color); font-family: 'Poppins', sans-serif; font-size: 1em; cursor: pointer; box-sizing: border-box; transition: background-color 0.3s, border-color 0.3s; }
+        button { background-color: var(--accent-color); border: none; font-weight: 600; color: white; margin-top: 10px; }
+        #showGraph { background-color: #27ae60; }
+        #showGraph:hover { background-color: #2ecc71; }
+        button:hover:not(:disabled) { background-color: #357abd; }
+        button:disabled { background-color: #555; cursor: not-allowed; }
+        input[type="file"] { display: none; }
+        .file-upload-label { display: block; padding: 10px; background-color: #2c3e50; color: white; text-align: center; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; margin-top: 10px;}
+        .file-upload-label:hover { background-color: #34495e; }
+        input[type="color"] { padding: 5px; height: 40px; }
+        input[type="range"] { padding: 0; }
+        .checkbox-group { display: flex; align-items: center; cursor: pointer; }
+        .checkbox-group input { margin-right: 10px; width: auto; }
+        .checkbox-group label { margin-bottom: 0; user-select: none; }
+        .input-group { display: flex; gap: 10px; }
+        .input-group > div { flex-grow: 1; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>Graphing Tool</h2>
+    
+    <button id="showGraph">Show / Refresh Graph</button>
+
+    <div class="control-group">
+        <label for="graphSelector">Active Graph:</label>
+        <select id="graphSelector"></select>
+        <label for="csvFile" class="file-upload-label">Upload New CSV (x,y,z,comment)</label>
+        <input type="file" id="csvFile" accept=".csv">
+    </div>
+
+    <div class="control-group" id="forecast-controls">
+        <h3>Forecasting</h3>
+        <label for="forecastSteps">Steps to Forecast:</label>
+        <input type="number" id="forecastSteps" value="10" min="1">
+        <button id="generateForecast">Generate FFT Forecast</button>
+        <button id="generateLinearForecast">Generate Linear Forecast</button>
+    </div>
+
+    <div class="control-group" id="appearance-controls">
+        <h3>Appearance</h3>
+        <div class="checkbox-group" style="margin-bottom: 15px;">
+            <input type="checkbox" id="enable3d">
+            <label for="enable3d">Enable 3D Mode</label>
+        </div>
+        <label for="lineColor">Line Color:</label>
+        <input type="color" id="lineColor" value="#4a90e2">
+        <label for="bgColor">Background Color:</label>
+        <input type="color" id="bgColor" value="#000000">
+        <label for="gridColor">Grid & Axis Color:</label>
+        <input type="color" id="gridColor" value="#cccccc">
+    </div>
+
+    <div class="control-group" id="text-font-controls">
+        <h3>Text & Font</h3>
+        <div class="checkbox-group" style="margin-bottom: 15px;">
+            <input type="checkbox" id="showCommentsToggle" checked>
+            <label for="showCommentsToggle">Show Comments on Graph</label>
+        </div>
+        <label for="graphHeadline">Graph Headline:</label>
+        <input type="text" id="graphHeadline" value="Example 1">
+        <div class="input-group">
+             <div><label for="headlineColor">Color</label><input type="color" id="headlineColor" value="#ffffff"></div>
+             <div><label for="headlineSize">Size</label><input type="number" id="headlineSize" value="20" min="1"></div>
+        </div>
+        <label for="headlineStyle">Style</label><select id="headlineStyle"><option value="normal">Normal</option><option value="bold">Bold</option><option value="italic">Italic</option></select>
+        <label for="fontUpload" class="file-upload-label">Upload Font (.ttf, .otf)</label><input type="file" id="fontUpload" accept=".ttf,.otf,.woff,.woff2">
+        <hr style="border-color: var(--border-color); margin: 20px 0;">
+        <label for="commentColor">Comment Color:</label><input type="color" id="commentColor" value="#ffffff">
+        <div class="input-group">
+            <div><label for="commentSize">Size</label><input type="number" id="commentSize" value="14" min="1"></div>
+            <div><label for="commentStyle">Style</label><select id="commentStyle"><option value="normal">Normal</option><option value="bold">Bold</option><option value="italic">Italic</option></select></div>
+        </div>
+    </div>
+    
+    <div class="control-group" id="style-controls">
+        <h3>Line Style</h3>
+        <label for="shadowColor">Line Shadow (2D Only):</label><input type="color" id="shadowColor" value="#4a90e2">
+        <label for="shadowIntensity">Intensity:</label><input type="range" id="shadowIntensity" min="0" max="20" value="5">
+        <label for="lineStyle">Style:</label><select id="lineStyle"><option value="line">Normal Line</option><option value="text">Use Text</option></select>
+        <input type="text" id="lineStyleText" placeholder="e.g., 😊 or Text" style="display:none; margin-top:10px;">
+    </div>
+
+    <div class="control-group" id="animation-controls">
+        <h3>Animation</h3>
+        <button id="animateGraph">Animate Graph</button>
+    </div>
+
+    <div class="control-group">
+        <h3>Export</h3>
+        <button id="saveData">Export CSV</button>
+        <button id="saveScreenshot">Save Screenshot</button>
+    </div>
+</div>
+
+<div class="main-content">
+    <div id="plot"></div>
+</div>
+
+<script>
+    const elements = {
+        showGraph: document.getElementById('showGraph'), csvFile: document.getElementById('csvFile'),
+        graphSelector: document.getElementById('graphSelector'),
+        generateForecast: document.getElementById('generateForecast'),
+        generateLinearForecast: document.getElementById('generateLinearForecast'),
+        forecastSteps: document.getElementById('forecastSteps'),
+        lineColor: document.getElementById('lineColor'), bgColor: document.getElementById('bgColor'), gridColor: document.getElementById('gridColor'),
+        showCommentsToggle: document.getElementById('showCommentsToggle'), enable3d: document.getElementById('enable3d'),
+        shadowColor: document.getElementById('shadowColor'), shadowIntensity: document.getElementById('shadowIntensity'), 
+        lineStyle: document.getElementById('lineStyle'), lineStyleText: document.getElementById('lineStyleText'),
+        graphHeadline: document.getElementById('graphHeadline'), fontUpload: document.getElementById('fontUpload'),
+        headlineColor: document.getElementById('headlineColor'), headlineSize: document.getElementById('headlineSize'), headlineStyle: document.getElementById('headlineStyle'),
+        commentColor: document.getElementById('commentColor'), commentSize: document.getElementById('commentSize'), commentStyle: document.getElementById('commentStyle'),
+        animateGraph: document.getElementById('animateGraph'), saveData: document.getElementById('saveData'), saveScreenshot: document.getElementById('saveScreenshot'),
+        plotDiv: document.getElementById('plot'), allControls: document.querySelectorAll('.sidebar input, .sidebar button, .sidebar select')
+    };
+
+    let graphData = {
+        'Example 1': {
+            x: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], y: [5, 8, 6, 10, 12, 15, 14, 18, 20, 22], z: [1, 2, 3, 2, 1, 2, 3, 4, 3, 2],
+            comments: ['Start', '', 'Dip', '', 'Mid-point', 'Peak', '', '', '', 'End'], color: '#4a90e2', isExample: true
+        },
+        'Example 2': {
+            x: Array.from({length: 40}, (_, i) => Math.cos(i / 4) * 5), y: Array.from({length: 40}, (_, i) => Math.sin(i / 4) * 5), z: Array.from({length: 40}, (_, i) => i / 4),
+            comments: ['','','Peak Z','','','','','','','','','','','','','','','','','Midpoint'], color: '#e74c3c', isExample: true
+        },
+        'Example 3': {
+            x: Array.from({length: 21}, (_, i) => i - 10), y: Array.from({length: 21}, (_, i) => Math.pow(i - 10, 2)), z: Array.from({length: 21}, (_, i) => 10-Math.abs(i-10)),
+            comments: ['','','','','','','','','','','Vertex'], color: '#2ecc71', isExample: true
+        },
+        'Example 4': {
+            x: Array.from({length: 50}, (_, i) => i + 1), y: (()=>{ let val=100; return Array.from({length:50}, ()=> val += (Math.random()-0.5)*8) })(), z: (()=>{ let val=20; return Array.from({length:50}, ()=> val += (Math.random()-0.5)*2) })(),
+            comments: ['Initial Price','','','','','Market Correction','','','','','New High!'], color: '#f1c40f', isExample: true
+        },
+        'Example 5': {
+            x: Array.from({length: 15}, (_, i) => i), y: Array.from({length: 15}, (_, i) => Math.exp(i * 0.4)), z: Array.from({length: 15}, (_, i) => i*2),
+            comments: ['Slow Start','','','','','','Rapid Growth Phase'], color: '#9b59b6', isExample: true
+        },
+        'Example 6': {
+            x: Array.from({length: 20}, (_, i) => i), y: Array.from({length: 20}, (_, i) => 100 * Math.exp(-i * 0.2)), z: Array.from({length: 20}, (_, i) => 20-i),
+            comments: ['Start','','','Half-life','','','','','','Approaching Zero'], color: '#e67e22', isExample: true
+        }
+    };
+    let activeGraphId = 'Example 1';
+    let forecastData = null;
+    let customFontFamily = "'Poppins', sans-serif";
+    let isAnimating = false;
+    let plotlyEventListenersInitialized = false;
+
+    // --- Event Listener Setup ---
+    const addDebouncedListener = (el, event, func, delay) => {
+        let timeout;
+        el.addEventListener(event, (...args) => { clearTimeout(timeout); timeout = setTimeout(() => func(...args), delay); });
+    };
+    
+    elements.showGraph.addEventListener('click', drawPlot);
+    elements.csvFile.addEventListener('change', handleFileUpload);
+    elements.fontUpload.addEventListener('change', handleFontUpload);
+    elements.animateGraph.addEventListener('click', animateGraph);
+    elements.saveData.addEventListener('click', exportData);
+    elements.saveScreenshot.addEventListener('click', () => Plotly.downloadImage(elements.plotDiv, { format: 'png', filename: 'graph_screenshot', bg: 'transparent' }));
+    elements.generateForecast.addEventListener('click', generateFFTForecast);
+    elements.generateLinearForecast.addEventListener('click', generateLinearForecast);
+
+    elements.graphSelector.addEventListener('change', (event) => { if (event.target.value) setActiveGraph(event.target.value); });
+    
+    [...document.querySelectorAll('.sidebar input, .sidebar select')].forEach(el => {
+        if(!['graphSelector', 'csvFile', 'fontUpload'].includes(el.id)){
+            const event = (el.tagName === 'SELECT' || el.type === 'checkbox') ? 'change' : 'input';
+            addDebouncedListener(el, event, drawPlot, 150);
+        }
+    });
+
+    
+    // --- Initialization ---
+    window.onload = () => {
+        updateGraphSelector();
+        setActiveGraph(activeGraphId, true); 
+        setTimeout(() => { elements.showGraph.click(); }, 100); 
+    };
+
+    // --- Core Functions ---
+    function drawPlot() {
+        if (!activeGraphId || isAnimating) return;
+        if (elements.plotDiv.offsetWidth === 0 || elements.plotDiv.offsetHeight === 0) { setTimeout(drawPlot, 100); return; }
+
+        const data = graphData[activeGraphId];
+        const is3D = elements.enable3d.checked;
+        const style = elements.lineStyle.value;
+        const showComments = elements.showCommentsToggle.checked;
+        
+        let headline = elements.graphHeadline.value;
+        if (headline) {
+            const hStyle = elements.headlineStyle.value;
+            if (hStyle === 'bold') headline = `<b>${headline}</b>`;
+            if (hStyle === 'italic') headline = `<i>${headline}</i>`;
+        }
+
+        const commentStyle = elements.commentStyle.value;
+        const styledComments = data.comments.map(c => {
+            if (!c) return '';
+            if (commentStyle === 'bold') return `<b>${c}</b>`;
+            if (commentStyle === 'italic') return `<i>${c}</i>`;
+            return c;
+        });
+
+        if (is3D && (!data.z || data.z.length !== data.x.length)) {
+            data.z = data.x.map((_, i) => i);
+        }
+
+        let traceMode = is3D ? 'lines+markers' : 'lines+markers';
+        if (style === 'text') traceMode = 'text';
+        else if (showComments && !is3D) traceMode += '+text';
+        
+        const traces = [];
+
+        const mainTrace = {
+            x: data.x, y: data.y, z: data.z,
+            mode: traceMode,
+            type: is3D ? 'scatter3d' : 'scatter',
+            name: activeGraphId,
+            line: { color: elements.lineColor.value, width: is3D ? 4 : 3 },
+            marker: { size: is3D ? 5 : 8, color: elements.lineColor.value },
+            text: style === 'text' ? Array(data.x.length).fill(elements.lineStyleText.value) : styledComments,
+            textposition: 'top center',
+            textfont: { family: customFontFamily, size: elements.commentSize.value, color: elements.commentColor.value },
+            hoverinfo: is3D ? 'x+y+z+text' : 'x+y+text',
+            hovertext: data.comments
+        };
+        traces.push(mainTrace);
+
+        if (forecastData) {
+            traces.push({
+                x: forecastData.x, y: forecastData.y, z: forecastData.z,
+                type: is3D ? 'scatter3d' : 'scatter',
+                mode: 'lines',
+                name: 'Forecast',
+                line: { color: '#ff7f0e', dash: 'dash' }
+            });
+        }
+
+        const axisColor = elements.gridColor.value;
+        const bgColor = elements.bgColor.value;
+        let layout;
+
+        if (is3D) {
+            layout = {
+                title: { text: headline || activeGraphId, font: { family: customFontFamily, color: axisColor, size: elements.headlineSize.value } },
+                scene: {
+                    xaxis: { title: 'X Axis', color: axisColor, gridcolor: axisColor },
+                    yaxis: { title: 'Y Axis', color: axisColor, gridcolor: axisColor },
+                    zaxis: { title: 'Z Axis', color: axisColor, gridcolor: axisColor },
+                    camera: { eye: {x: 1.25, y: 1.25, z: 1.25} },
+                    annotations: showComments ? data.x.map((x, i) => ({
+                        showarrow: false, x: x, y: data.y[i], z: data.z[i], text: styledComments[i] || '',
+                        font: { family: customFontFamily, size: elements.commentSize.value, color: elements.commentColor.value },
+                        yanchor: "bottom"
+                    })) : []
+                },
+                paper_bgcolor: bgColor,
+                margin: { l: 0, r: 0, b: 0, t: 40 }
+            };
+            if(showComments) mainTrace.mode = 'lines+markers';
+        } else {
+            layout = {
+                title: { text: headline || activeGraphId, font: { family: customFontFamily, color: axisColor, size: elements.headlineSize.value } },
+                paper_bgcolor: bgColor, plot_bgcolor: bgColor,
+                xaxis: { title: 'X Axis', gridcolor: axisColor, color: axisColor },
+                yaxis: { title: 'Y Axis', gridcolor: axisColor, color: axisColor },
+                margin: { l: 60, r: 40, b: 50, t: 60, pad: 4 }
+            };
+        }
+        
+        const config = { responsive: true, editable: true };
+        const shadowIntensity = elements.shadowIntensity.value;
+        elements.plotDiv.style.filter = !is3D && shadowIntensity > 0 ? `drop-shadow(0 0 ${shadowIntensity}px ${elements.shadowColor.value})` : 'none';
+        
+        Plotly.newPlot(elements.plotDiv, traces, layout, config);
+        
+        if (!plotlyEventListenersInitialized) {
+            initializePlotlyEventListeners();
+            plotlyEventListenersInitialized = true;
+        }
+    }
+    
+    function initializePlotlyEventListeners() {
+        elements.plotDiv.on('plotly_click', handlePlotClick);
+
+        elements.plotDiv.on('plotly_relayout', (eventData) => {
+            if (!forecastData || !eventData || Object.keys(eventData).length === 0) return;
+            
+            const updateKey = Object.keys(eventData).find(k => k.match(/shapes\[\d+\]\.(x0|x1|y0|y1)/) || k.match(/scene\.annotations\[\d+\]\.(x|y|z)/));
+            if (updateKey) return; 
+
+            const traceUpdateKey = Object.keys(eventData).find(k => k.match(/traces\[1\]\.(x|y|z)\[\d+\]/));
+            if (traceUpdateKey) {
+                const [, axis, indexStr] = traceUpdateKey.match(/traces\[1\]\.(x|y|z)\[(\d+)\]/);
+                const index = parseInt(indexStr, 10);
+                if (forecastData[axis] && typeof forecastData[axis][index] !== 'undefined') {
+                    forecastData[axis][index] = eventData[traceUpdateKey];
+                }
+            }
+        });
+    }
+
+    function setActiveGraph(id, isInitialLoad = false) {
+        forecastData = null;
+        const previousId = activeGraphId;
+        activeGraphId = id;
+        elements.graphSelector.value = id;
+        elements.lineColor.value = graphData[id].color || '#4a90e2';
+        elements.shadowColor.value = graphData[id].color || '#4a90e2';
+        
+        const currentHeadline = elements.graphHeadline.value;
+        if (isInitialLoad || currentHeadline === previousId || currentHeadline === '' || currentHeadline.startsWith('Example')) {
+            elements.graphHeadline.value = id;
+        }
+        
+        if (!isInitialLoad) drawPlot();
+    }
+
+    function updateGraphSelector() {
+        elements.graphSelector.innerHTML = ''; 
+        Object.keys(graphData).forEach(id => {
+            const option = document.createElement('option');
+            option.value = id; option.textContent = id;
+            elements.graphSelector.appendChild(option);
+        });
+    }
+    
+    function handleFontUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const fontDataUrl = e.target.result;
+            const fontName = 'user-uploaded-font';
+            const newStyle = document.createElement('style');
+            newStyle.appendChild(document.createTextNode(`@font-face { font-family: "${fontName}"; src: url(${fontDataUrl}); }`));
+            document.head.appendChild(newStyle);
+            customFontFamily = `"${fontName}", 'Poppins', sans-serif`;
+            drawPlot();
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        Papa.parse(file, {
+            header: true,
+            dynamicTyping: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+                const id = file.name;
+                graphData[id] = {
+                    x: results.data.map(row => row.x),
+                    y: results.data.map(row => row.y),
+                    z: results.data.map(row => row.z),
+                    comments: results.data.map(row => row.comment || ''),
+                    color: '#4a90e2',
+                    isExample: false
+                };
+                updateGraphSelector();
+                setActiveGraph(id);
+            }
+        });
+    }
+
+    function handlePlotClick(data) {
+        if (isAnimating || !activeGraphId || data.points.length === 0 || data.points[0].curveNumber > 0) return;
+        const pointIndex = data.points[0].pointIndex;
+        const currentComment = graphData[activeGraphId].comments[pointIndex];
+        const newComment = prompt("Enter comment:", currentComment || '');
+        if (newComment !== null) { graphData[activeGraphId].comments[pointIndex] = newComment; drawPlot(); }
+    }
+
+    function exportData() {
+        if (!activeGraphId) return;
+        const dataToExport = graphData[activeGraphId].x.map((x, i) => ({ x: x, y: graphData[activeGraphId].y[i], z: graphData[activeGraphId].z ? graphData[activeGraphId].z[i] : '', comment: graphData[activeGraphId].comments[i] || '' }));
+        const csv = Papa.unparse(dataToExport);
+        download(csv, `${activeGraphId}_with_comments.csv`, 'text/csv');
+    }
+    
+    function download(content, fileName, contentType) {
+        const a = document.createElement('a');
+        const file = new Blob([content], { type: contentType });
+        a.href = URL.createObjectURL(file); a.download = fileName; a.click(); URL.revokeObjectURL(a.href);
+    }
+
+    function animateGraph() {
+        if (!activeGraphId) return;
+        isAnimating = true;
+        toggleControls(false);
+
+        const data = graphData[activeGraphId];
+        const is3D = elements.enable3d.checked;
+        const axisColor = elements.gridColor.value;
+        const bgColor = elements.bgColor.value;
+        
+        let trace, layout, persistentAnnotations = [];
+        const initialHeadline = { text: "<b>Animating...</b>", font: { family: customFontFamily, color: elements.headlineColor.value, size: elements.headlineSize.value } };
+
+        if(is3D) {
+            trace = { x: [data.x[0]], y: [data.y[0]], z: [data.z[0]], type: 'scatter3d', mode: 'lines+markers', line: { color: elements.lineColor.value, width: 4 }, marker: { size: 5, color: elements.lineColor.value }};
+            layout = {
+                title: initialHeadline, paper_bgcolor: bgColor,
+                scene: {
+                    xaxis: { title: 'X', range: [Math.min(...data.x), Math.max(...data.x)], color: axisColor, gridcolor: axisColor },
+                    yaxis: { title: 'Y', range: [Math.min(...data.y), Math.max(...data.y)], color: axisColor, gridcolor: axisColor },
+                    zaxis: { title: 'Z', range: [Math.min(...data.z), Math.max(...data.z)], color: axisColor, gridcolor: axisColor },
+                    annotations: []
+                }
+            };
+        } else {
+            trace = { x: [data.x[0]], y: [data.y[0]], mode: 'lines+markers', line: { color: elements.lineColor.value, width: 3 }, marker: { size: 8, color: elements.lineColor.value } };
+            layout = {
+                title: initialHeadline, paper_bgcolor: bgColor, plot_bgcolor: bgColor,
+                xaxis: { range: [Math.min(...data.x), Math.max(...data.x)], gridcolor: axisColor, color: axisColor },
+                yaxis: { range: [Math.min(...data.y), Math.max(...data.y)], gridcolor: axisColor, color: axisColor },
+                annotations: []
+            };
+        }
+
+        Plotly.newPlot(elements.plotDiv, [trace], layout, {responsive: true});
+
+        let i = 0;
+        const interval = setInterval(() => {
+            if (i >= data.x.length - 1) {
+                clearInterval(interval); isAnimating = false; toggleControls(true); drawPlot(); return;
+            }
+            i++;
+
+            const extendUpdate = is3D ? { x: [[data.x[i]]], y: [[data.y[i]]], z: [[data.z[i]]] } : { x: [[data.x[i]]], y: [[data.y[i]]] };
+            Plotly.extendTraces(elements.plotDiv, extendUpdate, [0]);
+            
+            let commentText = data.comments[i];
+            if (commentText) {
+                const commentStyle = elements.commentStyle.value;
+                if (commentStyle === 'bold') commentText = `<b>${commentText}</b>`;
+                if (commentStyle === 'italic') commentText = `<i>${commentText}</i>`;
+                
+                let annotation;
+                if (is3D) {
+                    annotation = { showarrow: true, x: data.x[i], y: data.y[i], z: data.z[i], text: commentText, arrowhead: 2, ax: 0, ay: -40, font: { family: customFontFamily, color: elements.commentColor.value, size: elements.commentSize.value } };
+                } else {
+                    annotation = { x: data.x[i], y: data.y[i], text: commentText, showarrow: true, arrowhead: 2, ax: 0, ay: -40, font: { family: customFontFamily, color: elements.commentColor.value, size: elements.commentSize.value } };
+                }
+                persistentAnnotations.push(annotation);
+                
+                const relayoutUpdate = {};
+                const annotationKey = is3D ? 'scene.annotations' : 'annotations';
+                relayoutUpdate[annotationKey] = persistentAnnotations;
+                Plotly.relayout(elements.plotDiv, relayoutUpdate);
+            }
+        }, 200);
+    }
+
+    // --- Forecasting Logic ---
+
+    function generateLinearForecast() {
+        const data = graphData[activeGraphId];
+        const n = data.x.length;
+        const nForecast = parseInt(elements.forecastSteps.value, 10);
+
+        const lastX = data.x[n - 1];
+        const avgXStep = n > 1 ? (lastX - data.x[0]) / (n - 1) : 1;
+        const forecastX = Array.from({length: nForecast}, (_, i) => lastX + (i + 1) * avgXStep);
+
+        const { slope: ySlope, intercept: yIntercept } = linearRegression(data.x, data.y);
+        const forecastY = forecastX.map(x => ySlope * x + yIntercept);
+
+        let forecastZ = null;
+        if (elements.enable3d.checked && data.z && data.z.length === n) {
+            const { slope: zSlope, intercept: zIntercept } = linearRegression(data.x, data.z);
+            forecastZ = forecastX.map(x => zSlope * x + zIntercept);
+        }
+
+        forecastData = { x: forecastX, y: forecastY, z: forecastZ };
+        drawPlot();
+    }
+    
+    function generateFFTForecast() {
+        const data = graphData[activeGraphId];
+        const yData = data.y;
+        const n = yData.length;
+        const nForecast = parseInt(elements.forecastSteps.value, 10);
+
+        const { slope: trendSlope, intercept: trendIntercept } = linearRegression(data.x, yData);
+        const detrendedY = yData.map((y, i) => y - (trendSlope * data.x[i] + trendIntercept));
+
+        const N = Math.pow(2, Math.ceil(Math.log2(n)));
+        const paddedY = detrendedY.slice();
+        while (paddedY.length < N) { paddedY.push(0); }
+        const phasors = fft(paddedY);
+
+        const forecastY_cyclical = [];
+        for (let i = 0; i < nForecast; i++) {
+            const t = n + i;
+            let y_t = 0;
+            for (let j = 1; j < N / 2; j++) {
+                const [real, imag] = phasors[j];
+                const amplitude = Math.sqrt(real*real + imag*imag) / (N/2);
+                const phase = Math.atan2(imag, real);
+                const freq = j / N;
+                y_t += amplitude * Math.cos(2 * Math.PI * freq * t + phase);
+            }
+            forecastY_cyclical.push(y_t);
+        }
+
+        const lastX = data.x[n - 1];
+        const avgXStep = n > 1 ? (lastX - data.x[0]) / (n - 1) : 1;
+        const forecastX = Array.from({length: nForecast}, (_, i) => lastX + (i + 1) * avgXStep);
+        const forecastY = forecastY_cyclical.map((y, i) => y + (trendSlope * forecastX[i] + trendIntercept));
+        
+        let forecastZ = null;
+        if (elements.enable3d.checked && data.z && data.z.length === n) {
+            const { slope: zSlope, intercept: zIntercept } = linearRegression(data.x, data.z);
+            forecastZ = forecastX.map(x => zSlope * x + zIntercept);
+        }
+
+        forecastData = { x: forecastX, y: forecastY, z: forecastZ };
+        drawPlot();
+    }
+
+    function linearRegression(x, y) {
+        const n = x.length;
+        if (n === 0) return { slope: 0, intercept: 0 };
+        const sumX = x.reduce((a, b) => a + b, 0);
+        const sumY = y.reduce((a, b) => a + b, 0);
+        const sumXY = x.map((xi, i) => xi * y[i]).reduce((a, b) => a + b, 0);
+        const sumX2 = x.map(xi => xi*xi).reduce((a, b) => a + b, 0);
+        const denominator = (n * sumX2 - sumX * sumX);
+        const slope = denominator === 0 ? 0 : (n * sumXY - sumX * sumY) / denominator;
+        const intercept = (sumY - slope * sumX) / n;
+        return { slope, intercept };
+    }
+    
+    function toggleControls(enable) { 
+        elements.allControls.forEach(el => { el.disabled = !enable; });
+        if(enable) { elements.showGraph.disabled = false; }
+    }
+
+    // **FIXED**: Inlined FFT function to prevent loading errors
+    function fft(vector) {
+        const N = vector.length;
+        if (N <= 1) return [[vector[0], 0]];
+        
+        let E = [], O = [];
+        for (let i = 0; i < N; i++) {
+            if (i % 2 === 0) E.push(vector[i]);
+            else O.push(vector[i]);
+        }
+
+        const F_E = fft(E);
+        const F_O = fft(O);
+
+        const F = new Array(N);
+        for (let k = 0; k < N / 2; k++) {
+            const theta = -2 * Math.PI * k / N;
+            const [re, im] = F_O[k];
+            const Z = [Math.cos(theta) * re - Math.sin(theta) * im, Math.sin(theta) * re + Math.cos(theta) * im];
+
+            F[k] = [F_E[k][0] + Z[0], F_E[k][1] + Z[1]];
+            F[k + N/2] = [F_E[k][0] - Z[0], F_E[k][1] - Z[1]];
+        }
+        return F;
+    }
+</script>
+
+</body>
+</html>

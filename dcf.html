@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive DCF Calculator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #1a1c20; /* Darker main background for sections */
+            --secondary-bg: #111111; /* Even darker background for body */
+            --accent-color: #4a90e2; /* Blue accent for buttons, headings */
+            --text-color: #e0e0e0; /* Light text on dark backgrounds */
+            --dark-text: #e0e0e0; /* Similar to text-color for general body */
+            --border-color: #333740; /* Darker border color */
+            --shadow: rgba(0, 0, 0, 0.2);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            background-color: var(--secondary-bg); /* Use secondary-bg for body */
+            color: var(--dark-text);
+            display: flex;
+            justify-content: center; /* Center the container */
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--primary-bg); /* Use primary-bg for container */
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px var(--shadow); /* Use shadow variable */
+            max-width: 1200px;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        h1, h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: 600; /* From graph21.html sidebar h2 */
+            color: white; /* From graph21.html sidebar h2 */
+        }
+
+        .input-section {
+            background-color: var(--primary-bg); /* Consistent with container */
+            padding: 20px;
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Responsive columns */
+            gap: 20px;
+            border: 1px solid var(--border-color); /* Use border-color */
+            box-shadow: 0 2px 8px var(--shadow); /* Add a subtle shadow */
+            margin-bottom: 30px; /* Re-add margin-bottom as gap is internal */
+        }
+
+        .input-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px; /* Added gap for label and input */
+            padding: 5px 0; /* Minor vertical padding */
+            border-bottom: 1px dotted var(--border-color); /* Keep a subtle separator */
+        }
+
+        .input-group:last-of-type {
+            border-bottom: none; /* Remove border for the last item in a group */
+        }
+
+        label {
+            flex-grow: 1;
+            font-weight: 400;
+            color: var(--text-color); /* Light text color */
+            text-align: left;
+            font-size: 0.9em; /* From graph21.html control-group label */
+        }
+
+        input[type="number"], input[type="text"] {
+            /* General input/select/button styling from graph21.html */
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            background-color: #25282e; /* Specific input background */
+            color: var(--text-color);
+            font-family: 'Poppins', sans-serif;
+            font-size: 1em;
+            cursor: pointer;
+            box-sizing: border-box;
+            transition: background-color 0.3s, border-color 0.3s;
+            flex-shrink: 0;
+            width: 120px; /* Fixed width for consistency */
+            max-width: 120px;
+            text-align: right;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            background-color: #2e323b;
+        }
+
+        input[type="number"]:disabled, input[type="text"]:disabled {
+            background-color: #2e323b;
+            color: #888;
+            cursor: not-allowed;
+            border-color: #2e323b;
+        }
+
+        /* Radio button specific styles */
+        .radio-group {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-bottom: 20px;
+            grid-column: 1 / -1; /* Span across columns if within a grid */
+        }
+
+        .radio-group label {
+            flex-grow: 0;
+            margin: 0;
+            font-size: 1em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .radio-group input[type="radio"] {
+            /* Basic reset for radio button visual appearance */
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--accent-color);
+            border-radius: 50%;
+            outline: none;
+            cursor: pointer;
+            position: relative;
+            background-color: transparent;
+            margin: 0; /* Remove default margin */
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        .radio-group input[type="radio"]:checked {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        .radio-group input[type="radio"]:checked::before {
+            content: '';
+            display: block;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        button {
+            grid-column: 1 / -1; /* Span all columns */
+            display: block;
+            width: 100%;
+            padding: 12px 20px; /* Revert to slightly larger padding for buttons */
+            background-color: var(--accent-color); /* Accent color for button */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin-top: 25px;
+            transition: background-color 0.3s ease;
+            font-weight: 600; /* From graph21.html button */
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #357abd; /* Darker accent on hover */
+        }
+
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+
+        .results-section {
+            margin-top: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: var(--primary-bg); /* Dark background for table */
+            box-shadow: 0 2px 8px var(--shadow);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        table th, table td {
+            border: 1px solid var(--border-color); /* Darker border */
+            padding: 12px 15px;
+            text-align: right;
+            color: var(--text-color); /* Light text color */
+        }
+
+        table th {
+            background-color: #25282e; /* Slightly different header background */
+            color: var(--accent-color); /* Accent color for headers */
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+        }
+
+        table tr:nth-child(even) {
+            background-color: #1f2125; /* Alternate row background */
+        }
+
+        table td {
+            color: var(--text-color);
+        }
+
+        .summary-results {
+            background-color: var(--primary-bg); /* Dark background */
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            border: 1px solid var(--border-color); /* Darker border */
+            font-size: 1.1em;
+            line-height: 1.6;
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .summary-results p {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-color); /* Light text color */
+        }
+
+        .summary-results span {
+            font-weight: bold;
+            color: var(--accent-color); /* Accent color for values */
+            font-size: 1.2em;
+        }
+
+        .summary-results p:last-child {
+            margin-bottom: 0;
+            border-top: 1px solid var(--border-color); /* Darker border */
+            padding-top: 15px;
+            margin-top: 15px;
+            font-size: 1.3em;
+        }
+
+        .summary-results p:last-child span {
+            color: #27ae60; /* A good contrasting green for final value */
+            font-size: 1.4em;
+        }
+
+        .wacc-section {
+            grid-column: 1 / -1; /* Ensures the WACC section spans all columns within the grid */
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .wacc-calculated-inputs {
+            display: grid; /* Make this a grid container */
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Inherit responsive columns */
+            gap: 20px; /* Use the same gap as the main input-section */
+            padding-top: 10px;
+            border-top: 1px dotted var(--border-color);
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DCF Calculator</h1>
+
+        <div class="input-section">
+            <h2>Core Assumptions</h2>
+            <div class="input-group">
+                <label for="initialRevenue" title="Starting revenue figure for Year 0, before any growth.">Initial Revenue (Year 0):</label>
+                <input type="number" id="initialRevenue" value="1000000" step="1000">
+            </div>
+            <div class="input-group">
+                <label for="revenueGrowthRate" title="The annual percentage rate at which revenue is expected to grow during the explicit forecast period.">Revenue Growth Rate (%):</label>
+                <input type="number" id="revenueGrowthRate" value="10" step="0.1">
+            </div>
+            <div class="input-group">
+                <label for="ebitdaMargin" title="Earnings Before Interest, Taxes, Depreciation, and Amortization as a percentage of revenue. Represents operating profitability.">EBITDA Margin (%):</label>
+                <input type="number" id="ebitdaMargin" value="30" step="0.1">
+            </div>
+            <div class="input-group">
+                <label for="dAndAAsPercentOfRevenue" title="Depreciation & Amortization expenses as a percentage of revenue. D&A is added back to NOPAT to calculate FCF.">D&A as % of Revenue (%):</label>
+                <input type="number" id="dAndAAsPercentOfRevenue" value="5" step="0.1">
+            </div>
+            <div class="input-group">
+                <label for="taxRate" title="The effective corporate tax rate applied to EBIT to calculate NOPAT and for WACC calculation.">Tax Rate (%):</label>
+                <input type="number" id="taxRate" value="21" step="0.1">
+            </div>
+            <div class="input-group">
+                <label for="capexAsPercentOfRevenue" title="Capital Expenditures (investments in fixed assets) as a percentage of revenue. CAPEX is subtracted when calculating FCF.">CAPEX as % of Revenue (%):</label>
+                <input type="number" id="capexAsPercentOfRevenue" value="6" step="0.1">
+            </div>
+            <div class="input-group">
+                <label for="nwcChangeAsPercentOfRevenue" title="Change in Net Working Capital (Current Assets - Current Liabilities) as a percentage of revenue. Represents cash tied up in operations.">NWC Change as % of Revenue (%):</label>
+                <input type="number" id="nwcChangeAsPercentOfRevenue" value="2" step="0.1">
+            </div>
+            <div class="input-group">
+                <label for="terminalGrowthRate" title="The constant growth rate assumed for Free Cash Flows beyond the explicit forecast period (used in the Gordon Growth Model).">Terminal Growth Rate (%):</label>
+                <input type="number" id="terminalGrowthRate" value="2" step="0.1">
+            </div>
+            <div class="input-group">
+                <label for="projectionYears" title="The number of years for which detailed Free Cash Flows are explicitly forecast.">Projection Years:</label>
+                <input type="number" id="projectionYears" value="5" min="1" max="10">
+            </div>
+
+            <!-- WACC section -->
+            <div class="wacc-section">
+                <h3 style="text-align: center; margin-top: 20px; margin-bottom: 10px; color: white;">Weighted Average Cost of Capital (WACC)</h3>
+                <p class="formula-display" style="text-align: center; font-style: italic; margin-bottom: 5px; color: var(--accent-color); font-size: 1.1em;">
+                    WACC = (E/V) * R<sub>e</sub> + (D/V) * R<sub>d</sub> * (1 - T)
+                </p>
+                <p class="formula-explanation" style="text-align: center; font-size: 0.85em; margin-top: 0; margin-bottom: 20px; color: var(--text-color);">
+                    Where: E/V = Equity Ratio, D/V = Debt Ratio (1 - E/V), R<sub>e</sub> = Cost of Equity, R<sub>d</sub> = Cost of Debt, T = Corporate Tax Rate.
+                </p>
+
+                <div class="radio-group">
+                    <label for="directWacc">
+                        <input type="radio" id="directWacc" name="waccMethod" value="direct" checked onchange="toggleWaccInputs()">
+                        Direct WACC Input
+                    </label>
+                    <label for="calculateWaccRadio">
+                        <input type="radio" id="calculateWaccRadio" name="waccMethod" value="calculate" onchange="toggleWaccInputs()">
+                        Calculate WACC from Components
+                    </label>
+                </div>
+
+                <div id="waccDirectInput" class="input-group">
+                    <label for="discountRate" id="discountRateLabel" title="Weighted Average Cost of Capital (WACC), used to discount future cash flows to their present value.">Discount Rate (WACC) (%):</label>
+                    <input type="number" id="discountRate" value="10" step="0.1">
+                </div>
+
+                <div id="waccCalculatedInputs" style="display: none;">
+                    <div class="input-group">
+                        <label for="costOfEquity" title="The return required by equity investors (R_e).">Cost of Equity (Re) (%):</label>
+                        <input type="number" id="costOfEquity" value="12" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label for="costOfDebt" title="The interest rate paid on borrowed funds (R_d).">Cost of Debt (Rd) (%):</label>
+                        <input type="number" id="costOfDebt" value="5" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label for="equityRatioTarget" title="The proportion of the company's capital that is financed by equity (E/V). Debt ratio will be 1 - Equity Ratio.">Equity Ratio Target (%):</label>
+                        <input type="number" id="equityRatioTarget" value="70" step="0.1" min="0" max="100">
+                    </div>
+                    <div class="input-group">
+                        <label title="The corporate tax rate used for WACC calculation. (Editable in 'Core Assumptions')">Effective Tax Rate (%):</label>
+                        <input type="text" id="taxRateForWaccDisplay" value="21" disabled>
+                    </div>
+                </div>
+            </div>
+            <button onclick="calculateDCF()">Calculate DCF</button>
+        </div>
+
+        <div class="results-section">
+            <h2>DCF Results</h2>
+            <table id="dcfTable">
+                <thead>
+                    <tr>
+                        <th title="The specific year in the projection period.">Year</th>
+                        <th title="The total revenue generated by the company for the given year.">Revenue</th>
+                        <th title="Earnings Before Interest, Taxes, Depreciation, and Amortization.">EBITDA</th>
+                        <th title="Earnings Before Interest and Taxes (Operating Income). Calculated as EBITDA - D&A.">EBIT</th>
+                        <th title="Net Operating Profit After Tax. Calculated as EBIT * (1 - Tax Rate).">NOPAT</th>
+                        <th title="Depreciation & Amortization expenses for the year.">D&A</th>
+                        <th title="Capital Expenditures, representing investments in property, plant, and equipment.">CAPEX</th>
+                        <th title="Change in Net Working Capital (Current Assets - Current Liabilities).">ΔNWC</th>
+                        <th title="Free Cash Flow. The cash generated by the company after accounting for operating expenses, taxes, and investments. Calculated as NOPAT + D&A - CAPEX - ΔNWC.">FCF</th>
+                        <th title="The present value of the Free Cash Flow for the specific year, discounted by the WACC.">PV of FCF</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- FCF rows will be inserted here by JavaScript -->
+                </tbody>
+            </table>
+            <div class="summary-results">
+                <p>Terminal Value (TV): <span id="terminalValue" title="The value of all future Free Cash Flows beyond the explicit forecast period, calculated using the Gordon Growth Model.">N/A</span></p>
+                <p>Present Value of Terminal Value (PV TV): <span id="pvTerminalValue" title="The Terminal Value discounted back to the present day.">N/A</span></p>
+                <p>Sum of Present Value of FCFs: <span id="sumPvFcfs" title="The sum of the present values of the Free Cash Flows from the explicit forecast period.">N/A</span></p>
+                <p><strong>Enterprise Value: <span id="enterpriseValue" title="The total value of the company's operating assets. Calculated as the sum of the Present Value of FCFs and the Present Value of Terminal Value.">N/A</span></strong></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleWaccInputs() {
+            const directWaccRadio = document.getElementById('directWacc');
+            const calculateWaccRadio = document.getElementById('calculateWaccRadio');
+            const discountRateInput = document.getElementById('discountRate');
+            const discountRateLabel = document.getElementById('discountRateLabel');
+            const waccCalculatedInputsDiv = document.getElementById('waccCalculatedInputs');
+            const taxRateInput = document.getElementById('taxRate');
+            const taxRateForWaccDisplay = document.getElementById('taxRateForWaccDisplay');
+
+            if (directWaccRadio.checked) {
+                discountRateInput.disabled = false;
+                discountRateInput.style.backgroundColor = '#25282e';
+                discountRateInput.style.cursor = 'pointer';
+                discountRateLabel.textContent = "Discount Rate (WACC) (%):";
+                waccCalculatedInputsDiv.style.display = 'none';
+            } else { // calculateWaccRadio.checked
+                discountRateInput.disabled = true;
+                discountRateInput.style.backgroundColor = '#2e323b';
+                discountRateInput.style.cursor = 'not-allowed';
+                discountRateLabel.textContent = "Calculated WACC (%):";
+                waccCalculatedInputsDiv.style.display = 'grid'; // Use grid for internal layout
+                // Update the display tax rate
+                taxRateForWaccDisplay.value = taxRateInput.value;
+            }
+        }
+
+        function calculateDCF() {
+            // Get input values
+            const initialRevenue = parseFloat(document.getElementById('initialRevenue').value);
+            const revenueGrowthRate = parseFloat(document.getElementById('revenueGrowthRate').value) / 100;
+            const ebitdaMargin = parseFloat(document.getElementById('ebitdaMargin').value) / 100;
+            const dAndAAsPercentOfRevenue = parseFloat(document.getElementById('dAndAAsPercentOfRevenue').value) / 100;
+            const taxRate = parseFloat(document.getElementById('taxRate').value) / 100;
+            const capexAsPercentOfRevenue = parseFloat(document.getElementById('capexAsPercentOfRevenue').value) / 100;
+            const nwcChangeAsPercentOfRevenue = parseFloat(document.getElementById('nwcChangeAsPercentOfRevenue').value) / 100;
+            let discountRate; // This will hold the effective WACC
+            const terminalGrowthRate = parseFloat(document.getElementById('terminalGrowthRate').value) / 100;
+            const projectionYears = parseInt(document.getElementById('projectionYears').value);
+
+            // General validation for all always-present fields
+            if (isNaN(initialRevenue) || initialRevenue <= 0 ||
+                isNaN(revenueGrowthRate) ||
+                isNaN(ebitdaMargin) ||
+                isNaN(dAndAAsPercentOfRevenue) ||
+                isNaN(taxRate) ||
+                isNaN(capexAsPercentOfRevenue) ||
+                isNaN(nwcChangeAsPercentOfRevenue) ||
+                isNaN(terminalGrowthRate) ||
+                isNaN(projectionYears) || projectionYears <= 0) {
+                alert("Please enter valid numbers for all core assumption fields. Initial Revenue and Projection Years must be positive.");
+                return;
+            }
+
+            // WACC Calculation Logic
+            const directWaccRadio = document.getElementById('directWacc');
+            if (directWaccRadio.checked) {
+                discountRate = parseFloat(document.getElementById('discountRate').value) / 100;
+                if (isNaN(discountRate) || discountRate <= 0) {
+                    alert("Please enter a valid positive number for Discount Rate (WACC).");
+                    return;
+                }
+            } else { // Calculate WACC from components
+                const costOfEquity = parseFloat(document.getElementById('costOfEquity').value) / 100;
+                const costOfDebt = parseFloat(document.getElementById('costOfDebt').value) / 100;
+                const equityRatioTarget = parseFloat(document.getElementById('equityRatioTarget').value) / 100;
+
+                if (isNaN(costOfEquity) || costOfEquity <= 0 ||
+                    isNaN(costOfDebt) || costOfDebt <= 0 ||
+                    isNaN(equityRatioTarget) || equityRatioTarget < 0 || equityRatioTarget > 1) {
+                    alert("Please enter valid positive numbers for Cost of Equity, Cost of Debt, and an Equity Ratio Target between 0% and 100% to calculate WACC.");
+                    return;
+                }
+
+                const debtRatioTarget = 1 - equityRatioTarget;
+                discountRate = (equityRatioTarget * costOfEquity) + (debtRatioTarget * costOfDebt * (1 - taxRate));
+
+                // Update the read-only discount rate field for display
+                document.getElementById('discountRate').value = (discountRate * 100).toFixed(2);
+            }
+
+            // Final WACC related validation (after discountRate is determined)
+            if (discountRate <= 0) {
+                alert("The calculated or entered Discount Rate (WACC) must be positive.");
+                return;
+            }
+            if (terminalGrowthRate >= discountRate) {
+                alert("Terminal growth rate (" + (terminalGrowthRate * 100).toFixed(2) + "%) must be less than the Discount Rate (WACC) (" + (discountRate * 100).toFixed(2) + "%) for the Gordon Growth Model to be valid.");
+                return;
+            }
+            if (discountRate - terminalGrowthRate <= 0) {
+                alert("The difference between Discount Rate (WACC) and Terminal Growth Rate must be greater than zero for the Gordon Growth Model to avoid division by zero or negative results.");
+                return;
+            }
+
+            const dcfTableBody = document.querySelector('#dcfTable tbody');
+            dcfTableBody.innerHTML = ''; // Clear previous results
+
+            let currentRevenue = initialRevenue;
+            let sumPvFcfs = 0;
+            let lastYearFcf = 0;
+
+            for (let i = 1; i <= projectionYears; i++) {
+                const year = i;
+                currentRevenue *= (1 + revenueGrowthRate); // Revenue for the current projection year
+
+                const ebitda = currentRevenue * ebitdaMargin;
+                const dAndA = currentRevenue * dAndAAsPercentOfRevenue;
+                const ebit = ebitda - dAndA;
+                const nopat = ebit * (1 - taxRate); // Net Operating Profit After Tax
+
+                const capex = currentRevenue * capexAsPercentOfRevenue;
+                const nwcChange = currentRevenue * nwcChangeAsPercentOfRevenue; // Simplified NWC change
+
+                const fcf = nopat + dAndA - capex - nwcChange; // Free Cash Flow
+
+                const discountFactor = Math.pow(1 + discountRate, year);
+                const pvOfFcf = fcf / discountFactor;
+
+                sumPvFcfs += pvOfFcf;
+                lastYearFcf = fcf; // Keep track of FCF for the last projection year
+
+                const row = dcfTableBody.insertRow();
+                row.insertCell().textContent = year;
+                row.insertCell().textContent = currentRevenue.toFixed(2);
+                row.insertCell().textContent = ebitda.toFixed(2);
+                row.insertCell().textContent = ebit.toFixed(2);
+                row.insertCell().textContent = nopat.toFixed(2);
+                row.insertCell().textContent = dAndA.toFixed(2);
+                row.insertCell().textContent = capex.toFixed(2);
+                row.insertCell().textContent = nwcChange.toFixed(2);
+                row.insertCell().textContent = fcf.toFixed(2);
+                row.insertCell().textContent = pvOfFcf.toFixed(2);
+            }
+
+            // Calculate Terminal Value
+            // Using Gordon Growth Model: TV = (FCF_last_year * (1 + terminal_growth_rate)) / (discount_rate - terminal_growth_rate)
+            const terminalValue = (lastYearFcf * (1 + terminalGrowthRate)) / (discountRate - terminalGrowthRate);
+            const pvOfTerminalValue = terminalValue / Math.pow(1 + discountRate, projectionYears);
+
+            const enterpriseValue = sumPvFcfs + pvOfTerminalValue;
+
+            // Display results
+            document.getElementById('terminalValue').textContent = terminalValue.toFixed(2);
+            document.getElementById('pvTerminalValue').textContent = pvOfTerminalValue.toFixed(2);
+            document.getElementById('sumPvFcfs').textContent = sumPvFcfs.toFixed(2);
+            document.getElementById('enterpriseValue').textContent = enterpriseValue.toFixed(2);
+        }
+
+        // Initial setup when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleWaccInputs(); // Set initial state of WACC inputs
+            // Also update the tax rate display for WACC on load
+            document.getElementById('taxRateForWaccDisplay').value = document.getElementById('taxRate').value;
+            // Add event listener to update WACC tax rate display if main tax rate changes
+            document.getElementById('taxRate').addEventListener('input', function() {
+                document.getElementById('taxRateForWaccDisplay').value = this.value;
+            });
+            calculateDCF(); // Perform initial calculation
+        });
+    </script>
+</body>
+</html>

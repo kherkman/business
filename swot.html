@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Canvas SWOT Analysis - Styled</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* --- Root Variables from gantt13.html --- */
+        :root {
+            --primary-bg: #1a1c20; /* Main dark background for panels */
+            --secondary-bg: #111111; /* Even darker background for body/main content */
+            --accent-color: #4a90e2; /* Blue accent */
+            --text-color: #e0e0e0; /* Light text for general use */
+            --dark-text: #e0e0e0; /* Used for body text, same as text-color for now */
+            --border-color: #333740; /* Darker border color */
+            --shadow: rgba(0, 0, 0, 0.2); /* Shadow color */
+            --control-bg: #25282e; /* Background for general input/select/button */
+            --button-hover-bg: #357abd; /* Accent button hover */
+            --success-button-bg: #27ae60; /* For 'Add New Point' (can be adapted) */
+            --success-button-hover-bg: #2ecc71;
+            --label-file-upload-bg: #2c3e50;
+            --label-file-upload-hover-bg: #34495e;
+
+            /* SWOT specific default colors (matching the dark theme visually) */
+            --swot-strengths-bg: #1e4a2a; /* Darker green */
+            --swot-strengths-border: #27ae60;
+            --swot-strengths-headline: #27ae60;
+
+            --swot-weaknesses-bg: #4a1e1e; /* Darker red */
+            --swot-weaknesses-border: #e74c3c;
+            --swot-weaknesses-headline: #e74c3c;
+
+            --swot-opportunities-bg: #4a3a1e; /* Darker yellow/orange */
+            --swot-opportunities-border: #f39c12;
+            --swot-opportunities-headline: #f39c12;
+
+            --swot-threats-bg: #3a1e4a; /* Darker purple */
+            --swot-threats-border: #8e44ad;
+            --swot-threats-headline: #8e44ad;
+        }
+
+        /* --- Global Styles from gantt13.html --- */
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            background-color: var(--secondary-bg);
+            color: var(--dark-text);
+            display: flex;
+            flex-direction: column; /* Stack top-panel and main-content vertically */
+            height: 100vh;
+            overflow: hidden; /* Prevent body scroll, let specific areas scroll */
+        }
+
+        /* --- New Top Panel (formerly sidebar) --- */
+        .top-panel {
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            padding: 15px 30px; /* Adjust padding for top bar */
+            box-shadow: 0px 5px 15px var(--shadow); /* Shadow at the bottom */
+            z-index: 10;
+            display: flex;
+            align-items: center; /* Vertically align items */
+            flex-wrap: wrap; /* Allow controls to wrap if window is too narrow */
+            gap: 20px; /* Gap between control groups */
+            max-height: 120px; /* Limit height if many controls wrap */
+            overflow-y: auto; /* Allow scrolling within the top panel if too many controls for its max-height */
+            flex-shrink: 0; /* Prevent it from shrinking */
+        }
+
+        .top-panel h1 { /* Main title in the top bar */
+            margin: 0; /* Remove default h1 margin */
+            font-weight: 600;
+            color: white;
+            font-size: 1.8em; /* Adjust size for prominent title */
+            margin-right: 30px; /* Space between title and controls */
+            flex-shrink: 0; /* Prevent title from shrinking */
+        }
+
+        .top-panel .controls-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px; /* Gap between control groups */
+            align-items: center;
+            flex-grow: 1; /* Allow controls wrapper to take available space */
+        }
+        
+        /* Adapting control-group for horizontal flow in top-panel */
+        .top-panel .control-group {
+            border-top: none; /* Remove border from former sidebar layout */
+            padding-top: 0;
+            display: flex; /* Make elements within control-group flow horizontally */
+            align-items: center;
+            gap: 10px; /* Gap between elements like button, label */
+        }
+
+        .top-panel .control-group .section-title { /* For "Data Management" */
+            margin: 0;
+            font-weight: 600;
+            color: var(--accent-color);
+            flex-shrink: 0; /* Prevent heading from shrinking */
+            padding-right: 5px; /* Small space after title */
+        }
+
+        /* --- Input, Select, Button Styles from gantt13.html --- */
+        select, input:not([type="checkbox"], [type="color"]), button {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            background-color: var(--control-bg);
+            color: var(--text-color);
+            font-family: 'Poppins', sans-serif;
+            font-size: 1em;
+            cursor: pointer;
+            box-sizing: border-box;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        select:focus, input:not([type="checkbox"], [type="color"]):focus {
+            outline: 1px solid var(--accent-color);
+            border-color: var(--accent-color);
+            background-color: #333740;
+        }
+        
+        /* Adjust button/input widths specifically for the top panel */
+        .top-panel select, .top-panel input:not([type="checkbox"], [type="color"]), .top-panel button {
+            width: auto;
+            min-width: 120px;
+        }
+
+        button {
+            background-color: var(--accent-color);
+            border: none;
+            font-weight: 600;
+            color: white;
+            margin-top: 10px; /* Default margin for vertical flow */
+        }
+        .top-panel button {
+            margin-top: 0; /* Remove top margin for horizontal flow */
+        }
+
+        #addPointBtn { /* Specific style for Add Task button, adapted for "Add New Point" */
+            background-color: var(--success-button-bg);
+        }
+        #addPointBtn:hover {
+            background-color: var(--success-button-hover-bg);
+        }
+        button:hover:not(:disabled) {
+            background-color: var(--button-hover-bg);
+        }
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .file-upload-label {
+            display: block;
+            padding: 10px;
+            background-color: var(--label-file-upload-bg);
+            color: white;
+            text-align: center;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px; /* Default margin for vertical flow */
+        }
+        .top-panel .file-upload-label {
+            margin-top: 0; /* Remove top margin for horizontal flow */
+            width: auto;
+            min-width: 120px;
+        }
+        .file-upload-label:hover {
+            background-color: var(--label-file-upload-hover-bg);
+        }
+        /* Color picker general styling (improved visibility from previous step) */
+        input[type="color"] {
+            width: 32px;
+            height: 32px;
+            border: 2px solid var(--border-color); /* Use theme's border color */
+            padding: 0;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+            top: 2px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: none; border-radius: 4px; }
+        input[type="color"]::-moz-color-swatch { border: none; border-radius: 4px; }
+
+
+        /* --- Main Content Area for SWOT --- */
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--secondary-bg);
+            overflow-y: auto;
+        }
+        
+        .swot-grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 15px;
+            width: 90vw;
+            max-width: 1200px;
+            height: 70vh;
+            max-height: 800px;
+            margin: 0 auto; /* Center the grid */
+            border: 1px solid var(--border-color); /* Use theme's border color */
+            box-shadow: 0 5px 15px var(--shadow);
+            background-color: var(--primary-bg); /* Main background for the grid itself */
+            overflow: hidden;
+            position: relative;
+            border-radius: 8px; /* Rounded corners for the main container */
+        }
+        .swot-quadrant {
+            position: relative;
+            border: 1px solid var(--border-color); /* Consistent border for quadrants */
+            padding: 10px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            box-sizing: border-box;
+            transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            border-radius: 4px; /* Slightly rounded corners for quadrants */
+        }
+        .swot-quadrant.highlight {
+            box-shadow: inset 0 0 0 3px var(--accent-color); /* Blue border highlight */
+            z-index: 5;
+        }
+        .swot-quadrant h2 {
+            margin-top: 5px;
+            margin-bottom: 15px;
+            font-size: 1.6em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            user-select: none;
+            pointer-events: auto;
+            outline: none;
+            padding: 2px 5px;
+            min-width: 100px;
+            text-align: center;
+            border-radius: 3px;
+            transition: background-color 0.1s;
+        }
+        .swot-quadrant h2:hover {
+            background-color: rgba(255,255,255,0.05); /* Light hover effect on dark background */
+        }
+        .swot-quadrant h2:empty::before {
+            content: "Click to edit";
+            color: #888; /* Darker placeholder text */
+            font-style: italic;
+        }
+        .quadrant-header-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        /* SWOT Quadrant specific colors (using CSS variables) */
+        .strengths { background-color: var(--swot-strengths-bg); border-color: var(--swot-strengths-border); }
+        .strengths h2 { color: var(--swot-strengths-headline); }
+        .weaknesses { background-color: var(--swot-weaknesses-bg); border-color: var(--swot-weaknesses-border); }
+        .weaknesses h2 { color: var(--swot-weaknesses-headline); }
+        .opportunities { background-color: var(--swot-opportunities-bg); border-color: var(--swot-opportunities-border); }
+        .opportunities h2 { color: var(--swot-opportunities-headline); }
+        .threats { background-color: var(--swot-threats-bg); border-color: var(--swot-threats-border); }
+        .threats h2 { color: var(--swot-threats-headline); }
+
+
+        /* Styling for the draggable points */
+        .swot-point {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background-color: var(--control-bg); /* Use a control-like background for points */
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: grab;
+            box-shadow: 0 2px 5px var(--shadow);
+            transition: box-shadow 0.1s ease, border-color 0.1s ease, background-color 0.1s ease;
+            z-index: 10;
+            min-width: 100px;
+            color: var(--text-color); /* Point text color */
+        }
+        .swot-point:hover {
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3); /* Stronger shadow on hover */
+            border-color: var(--accent-color); /* Accent border on hover */
+            background-color: #333740; /* Slightly lighter bg on hover */
+        }
+        .swot-point.dragging {
+            cursor: grabbing;
+            z-index: 100;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+            opacity: 0.9; /* Slightly more opaque when dragging */
+        }
+
+        .point-marker {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            /* Background color set dynamically by JavaScript */
+            border: 1px solid rgba(255,255,255,0.3); /* Subtle white border for contrast */
+        }
+
+        .point-label {
+            font-size: 0.9em;
+            outline: none;
+            flex-grow: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 50px;
+            color: var(--text-color); /* Ensure label text is visible */
+        }
+        .point-label:empty::before {
+            content: "Click to edit";
+            color: #888;
+            font-style: italic;
+        }
+
+        .delete-point-btn {
+            background-color: #dc3545; /* Red delete button */
+            color: white;
+            border: none;
+            border-radius: 3px;
+            width: 18px;
+            height: 18px;
+            font-size: 0.7em;
+            line-height: 1;
+            text-align: center;
+            cursor: pointer;
+            margin-left: 5px;
+            flex-shrink: 0;
+            opacity: 0.8;
+            transition: opacity 0.2s ease, background-color 0.2s ease;
+        }
+        .delete-point-btn:hover {
+            opacity: 1;
+            background-color: #c82333;
+        }
+        
+        .instructions {
+            text-align: center;
+            margin-top: 20px;
+            color: #aaa; /* Lighter grey for instructions on dark background */
+            font-size: 0.9em;
+            padding-bottom: 10px; /* Add some space below instructions */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-panel">
+        <h1>SWOT Canvas</h1>
+        <div class="controls-wrapper">
+            <div class="control-group">
+                <button id="addPointBtn">Add New Point</button>
+            </div>
+
+            <div class="control-group">
+                <span class="section-title">Data Management</span>
+                <button onclick="document.getElementById('fileInput').click()">Load SWOT Data</button>
+                <input type="file" id="fileInput" accept=".json" onchange="loadData(event)">
+                <button onclick="saveData()">Save SWOT Data</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <p class="instructions">Click anywhere in a quadrant to add a new point. Drag points to move them between quadrants. Click on the text to edit the label. Click 'X' to delete a point. Click on a quadrant headline to edit it. Use the **color picker (the larger square next to the headline)** to change quadrant colors. **Point markers will automatically match the quadrant color.**</p>
+
+        <div class="swot-grid-container">
+            <div id="strengthsQuadrant" class="swot-quadrant strengths" data-category="strengths">
+                <div class="quadrant-header-controls">
+                    <h2 contenteditable="true">Strengths</h2>
+                    <input type="color" class="quadrant-color-picker" data-target="strengths" value="#1e4a2a">
+                </div>
+            </div>
+
+            <div id="weaknessesQuadrant" class="swot-quadrant weaknesses" data-category="weaknesses">
+                <div class="quadrant-header-controls">
+                    <h2 contenteditable="true">Weaknesses</h2>
+                    <input type="color" class="quadrant-color-picker" data-target="weaknesses" value="#4a1e1e">
+                </div>
+            </div>
+
+            <div id="opportunitiesQuadrant" class="swot-quadrant opportunities" data-category="opportunities">
+                <div class="quadrant-header-controls">
+                    <h2 contenteditable="true">Opportunities</h2>
+                    <input type="color" class="quadrant-color-picker" data-target="opportunities" value="#4a3a1e">
+                </div>
+            </div>
+
+            <div id="threatsQuadrant" class="swot-quadrant threats" data-category="threats">
+                <div class="quadrant-header-controls">
+                    <h2 contenteditable="true">Threats</h2>
+                    <input type="color" class="quadrant-color-picker" data-target="threats" value="#3a1e4a">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const swotQuadrants = document.querySelectorAll('.swot-quadrant');
+        const addPointBtn = document.getElementById('addPointBtn'); // Get the new add point button
+        let draggedPoint = null;
+        let offsetX, offsetY; // Mouse position relative to the point's top-left corner
+        let originalParentQuadrant = null; // To remember where it came from
+        let originalX, originalY; // Original position if drag is cancelled
+
+        // Function to create a new point element
+        function createSwotPoint(x, y, category, initialLabel = "") {
+            const point = document.createElement('div');
+            point.className = 'swot-point';
+            point.setAttribute('data-category', category); // Set data-category for CSS styling
+            point.style.left = `${x}px`;
+            point.style.top = `${y}px`;
+
+            const marker = document.createElement('span');
+            marker.className = 'point-marker';
+            // Set initial marker color based on the category's quadrant color
+            const parentQuadrantElement = document.getElementById(`${category}Quadrant`);
+            if (parentQuadrantElement) {
+                marker.style.backgroundColor = parentQuadrantElement.style.backgroundColor || getComputedStyle(parentQuadrantElement).backgroundColor;
+            }
+            point.appendChild(marker);
+
+            const label = document.createElement('span');
+            label.className = 'point-label';
+            label.setAttribute('contenteditable', 'true');
+            label.textContent = initialLabel || 'New Point';
+            point.appendChild(label);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-point-btn';
+            deleteBtn.textContent = 'X';
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation(); // Prevent quadrant click from firing
+                point.remove();
+            };
+            point.appendChild(deleteBtn);
+
+            // Add drag functionality
+            point.addEventListener('mousedown', (e) => {
+                // Only start drag if not clicking on the label or delete button
+                if (e.target.closest('.point-label') || e.target.closest('.delete-point-btn')) {
+                    return;
+                }
+                e.preventDefault(); // Prevent text selection
+                draggedPoint = point;
+                originalParentQuadrant = point.parentElement; // Store original parent
+                originalX = parseFloat(point.style.left);
+                originalY = parseFloat(point.style.top);
+
+                point.classList.add('dragging');
+
+                // Temporarily change to fixed position for seamless dragging across containers
+                const pointRect = point.getBoundingClientRect();
+                point.style.position = 'fixed';
+                point.style.left = `${pointRect.left}px`;
+                point.style.top = `${pointRect.top}px`;
+
+                // Calculate mouse position relative to the point's origin
+                offsetX = e.clientX - pointRect.left;
+                offsetY = e.clientY - pointRect.top;
+
+                // Add mousemove and mouseup listeners to the document
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+
+            return point;
+        }
+
+        // Initialize quadrant event listeners
+        swotQuadrants.forEach(quadrant => {
+            // Click to add point
+            quadrant.addEventListener('click', (e) => {
+                // If clicked on an existing point, headline or color picker, don't add a new point
+                if (e.target.closest('.swot-point') || e.target.closest('h2') || e.target.closest('.quadrant-color-picker')) {
+                    return;
+                }
+
+                const rect = quadrant.getBoundingClientRect();
+                // Calculate click position relative to the quadrant
+                let x = e.clientX - rect.left;
+                let y = e.clientY - rect.top;
+
+                // Adjust for point's own estimated size (e.g., center the point on the click)
+                const pointWidth = 100;
+                const pointHeight = 30;
+                x -= (pointWidth / 2);
+                y -= (pointHeight / 2);
+
+                // Ensure point is not placed outside the quadrant's visual area initially
+                x = Math.max(0, Math.min(x, rect.width - pointWidth));
+                y = Math.max(0, Math.min(y, rect.height - pointHeight));
+
+                const category = quadrant.getAttribute('data-category');
+                const newPoint = createSwotPoint(x, y, category);
+                quadrant.appendChild(newPoint);
+                // Immediately focus on the label for editing
+                newPoint.querySelector('.point-label').focus();
+            });
+
+            // Color picker change listener
+            const colorPicker = quadrant.querySelector('.quadrant-color-picker');
+            if (colorPicker) {
+                colorPicker.addEventListener('input', (e) => {
+                    const newColor = e.target.value;
+                    const h2Element = quadrant.querySelector('h2');
+                    
+                    // Set quadrant's background color
+                    quadrant.style.backgroundColor = newColor;
+                    
+                    // Calculate and set border and headline color
+                    const darkerColor = getDarkerColor(newColor, 30); // Use helper for darker shade
+                    if (darkerColor) {
+                        quadrant.style.borderColor = darkerColor;
+                        h2Element.style.color = darkerColor;
+                    } else {
+                        quadrant.style.borderColor = newColor;
+                        h2Element.style.color = '#e0e0e0'; // Fallback text color from theme
+                    }
+
+                    // *** Update colors of all points within this quadrant ***
+                    quadrant.querySelectorAll('.swot-point').forEach(point => {
+                        const marker = point.querySelector('.point-marker');
+                        if (marker) {
+                            marker.style.backgroundColor = newColor;
+                        }
+                    });
+                });
+            }
+        });
+
+        // Helper function for color calculation (basic, makes color darker)
+        function getDarkerColor(hex, amount) {
+            const hexToRgbResult = hexToRgb(hex);
+            if (!hexToRgbResult) return null;
+
+            let { r, g, b } = hexToRgbResult;
+            r = Math.max(0, r - amount);
+            g = Math.max(0, g - amount);
+            b = Math.max(0, b - amount);
+
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function hexToRgb(hex) {
+            const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+            hex = hex.replace(shorthandRegex, function(m, r, g, b) {
+                return r + r + g + g + b + b;
+            });
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        // Global mouse move handler for dragging
+        function onMouseMove(e) {
+            if (!draggedPoint) return;
+
+            e.preventDefault();
+
+            // Update the fixed position of the dragged point
+            draggedPoint.style.left = `${e.clientX - offsetX}px`;
+            draggedPoint.style.top = `${e.clientY - offsetY}px`;
+
+            // Highlight the quadrant under the mouse
+            swotQuadrants.forEach(quadrant => {
+                quadrant.classList.remove('highlight');
+                const rect = quadrant.getBoundingClientRect();
+                if (e.clientX >= rect.left && e.clientX <= rect.right &&
+                    e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                    quadrant.classList.add('highlight');
+                }
+            });
+        }
+
+        // Global mouse up handler to stop dragging
+        function onMouseUp(e) {
+            if (!draggedPoint) return;
+
+            draggedPoint.classList.remove('dragging');
+            
+            // Remove all quadrant highlights
+            swotQuadrants.forEach(quadrant => quadrant.classList.remove('highlight'));
+
+            let targetQuadrant = null;
+            // Find which quadrant the mouse cursor is over
+            for (let i = 0; i < swotQuadrants.length; i++) {
+                const quadrant = swotQuadrants[i];
+                const rect = quadrant.getBoundingClientRect();
+                if (e.clientX >= rect.left && e.clientX <= rect.right &&
+                    e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                    targetQuadrant = quadrant;
+                    break;
+                }
+            }
+
+            if (targetQuadrant) {
+                // Calculate final position relative to the target quadrant
+                const targetRect = targetQuadrant.getBoundingClientRect();
+                let finalX = e.clientX - targetRect.left - offsetX;
+                let finalY = e.clientY - targetRect.top - offsetY;
+
+                // Get point's actual current dimensions for boundary checking
+                const pointRect = draggedPoint.getBoundingClientRect();
+                const pointWidth = pointRect.width;
+                const pointHeight = pointRect.height;
+
+                // Constrain movement within the target quadrant
+                finalX = Math.max(0, Math.min(finalX, targetQuadrant.offsetWidth - pointWidth));
+                finalY = Math.max(0, Math.min(finalY, targetQuadrant.offsetHeight - pointHeight));
+
+                // Change parent if different
+                if (draggedPoint.parentElement !== targetQuadrant) {
+                    targetQuadrant.appendChild(draggedPoint);
+                    // Update the data-category attribute
+                    const newCategory = targetQuadrant.getAttribute('data-category');
+                    draggedPoint.setAttribute('data-category', newCategory);
+                    // *** Update marker color to new quadrant's color ***
+                    const newQuadrantColor = targetQuadrant.style.backgroundColor || getComputedStyle(targetQuadrant).backgroundColor;
+                    draggedPoint.querySelector('.point-marker').style.backgroundColor = newQuadrantColor;
+                }
+                
+                draggedPoint.style.position = 'absolute';
+                draggedPoint.style.left = `${finalX}px`;
+                draggedPoint.style.top = `${finalY}px`;
+
+            } else {
+                // If dropped outside any quadrant, revert to original position in original parent
+                originalParentQuadrant.appendChild(draggedPoint); // Ensure it's back in its original parent
+                draggedPoint.style.position = 'absolute';
+                draggedPoint.style.left = `${originalX}px`;
+                draggedPoint.style.top = `${originalY}px`;
+                // Ensure the category and marker color revert if it was changed mid-drag
+                const originalCategory = originalParentQuadrant.getAttribute('data-category');
+                draggedPoint.setAttribute('data-category', originalCategory);
+                const originalQuadrantColor = originalParentQuadrant.style.backgroundColor || getComputedStyle(originalParentQuadrant).backgroundColor;
+                draggedPoint.querySelector('.point-marker').style.backgroundColor = originalQuadrantColor;
+            }
+
+            draggedPoint = null;
+            originalParentQuadrant = null;
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        }
+
+        // --- Save and Load Functionality ---
+
+        function saveData() {
+            const swotData = {
+                quadrants: {},
+                points: []
+            };
+
+            swotQuadrants.forEach(quadrant => {
+                const category = quadrant.getAttribute('data-category');
+                swotData.quadrants[category] = {
+                    headline: quadrant.querySelector('h2').textContent,
+                    backgroundColor: quadrant.style.backgroundColor || getComputedStyle(quadrant).backgroundColor,
+                    borderColor: quadrant.style.borderColor || getComputedStyle(quadrant).borderColor,
+                    headlineColor: quadrant.querySelector('h2').style.color || getComputedStyle(quadrant.querySelector('h2')).color
+                };
+
+                quadrant.querySelectorAll('.swot-point').forEach(point => {
+                    swotData.points.push({
+                        category: point.getAttribute('data-category'),
+                        label: point.querySelector('.point-label').textContent,
+                        x: parseFloat(point.style.left),
+                        y: parseFloat(point.style.top)
+                    });
+                });
+            });
+
+            const dataStr = JSON.stringify(swotData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'swot_analysis.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function loadData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const swotData = JSON.parse(e.target.result);
+                    
+                    // Clear existing points
+                    swotQuadrants.forEach(quadrant => {
+                        quadrant.querySelectorAll('.swot-point').forEach(point => point.remove());
+                    });
+
+                    // Load quadrant data
+                    for (const category in swotData.quadrants) {
+                        const quadrantData = swotData.quadrants[category];
+                        const quadrant = document.getElementById(`${category}Quadrant`);
+                        if (quadrant) {
+                            quadrant.querySelector('h2').textContent = quadrantData.headline;
+                            quadrant.style.backgroundColor = quadrantData.backgroundColor;
+                            quadrant.style.borderColor = quadrantData.borderColor;
+                            quadrant.querySelector('h2').style.color = quadrantData.headlineColor;
+
+                            // Update color picker value
+                            const colorPicker = quadrant.querySelector('.quadrant-color-picker');
+                            if (colorPicker) {
+                                let hexColor = '#000000'; // Default
+                                if (quadrantData.backgroundColor.startsWith('rgb')) {
+                                    const rgb = quadrantData.backgroundColor.match(/\d+/g);
+                                    if (rgb && rgb.length === 3) {
+                                        hexColor = "#" + ((1 << 24) + (parseInt(rgb[0]) << 16) + (parseInt(rgb[1]) << 8) + parseInt(rgb[2])).toString(16).slice(1);
+                                    }
+                                } else if (quadrantData.backgroundColor.startsWith('#')) {
+                                    hexColor = quadrantData.backgroundColor;
+                                }
+                                colorPicker.value = hexColor;
+                            }
+                        }
+                    }
+
+                    // Load points
+                    swotData.points.forEach(pointData => {
+                        const quadrant = document.getElementById(`${pointData.category}Quadrant`);
+                        if (quadrant) {
+                            const newPoint = createSwotPoint(pointData.x, pointData.y, pointData.category, pointData.label);
+                            quadrant.appendChild(newPoint);
+                            // *** Set the marker color after the point has been created and appended ***
+                            const marker = newPoint.querySelector('.point-marker');
+                            if (marker) {
+                                marker.style.backgroundColor = quadrant.style.backgroundColor || getComputedStyle(quadrant).backgroundColor;
+                            }
+                        }
+                    });
+
+                } catch (error) {
+                    alert('Error loading SWOT data: Invalid JSON file. ' + error.message);
+                    console.error('Loading error:', error);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Function to add a new point via the button in the top panel
+        addPointBtn.addEventListener('click', () => {
+            // Add a point to the first quadrant (Strengths) by default, or you could prompt the user
+            const targetQuadrant = document.getElementById('strengthsQuadrant');
+            if (targetQuadrant) {
+                const rect = targetQuadrant.getBoundingClientRect();
+                // Place it somewhat centrally or at a default position within the quadrant
+                const x = (rect.width / 2) - 50; // Roughly center, adjusting for point size
+                const y = (rect.height / 2) - 15;
+                const newPoint = createSwotPoint(x, y, 'strengths', 'New Point');
+                targetQuadrant.appendChild(newPoint);
+                newPoint.querySelector('.point-label').focus();
+            }
+        });
+
+
+        // Initialize default colors for color pickers on load (if not set by CSS directly)
+        // Also ensure initial point marker colors are set
+        window.addEventListener('load', () => {
+            swotQuadrants.forEach(quadrant => {
+                const colorPicker = quadrant.querySelector('.quadrant-color-picker');
+                if (colorPicker) {
+                    // Set initial color picker value based on computed background color
+                    const computedBgColor = getComputedStyle(quadrant).backgroundColor;
+                    const rgb = computedBgColor.match(/\d+/g);
+                    if (rgb && rgb.length >= 3) {
+                        const hex = "#" + ((1 << 24) + (parseInt(rgb[0]) << 16) + (parseInt(rgb[1]) << 8) + parseInt(rgb[2])).toString(16).slice(1);
+                        colorPicker.value = hex;
+                    }
+                }
+                // Also update existing points' marker colors on load
+                quadrant.querySelectorAll('.swot-point').forEach(point => {
+                    const marker = point.querySelector('.point-marker');
+                    if (marker) {
+                        marker.style.backgroundColor = quadrant.style.backgroundColor || getComputedStyle(quadrant).backgroundColor;
+                    }
+                });
+            });
+        });
+
+    </script>
+
+</body>
+</html>
