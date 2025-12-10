@@ -1,479 +1,490 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Planning Pivot</title>
-    <meta charset="utf-8" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        /* CSS Variables for consistent theming */
-        :root {
-            --primary-bg: #1a1c20; /* Darker main background for sections */
-            --secondary-bg: #111111; /* Even darker background for body */
-            --accent-color: #4a90e2; /* Blue accent for buttons, headings, links */
-            --text-color: #000000; /* Light text on dark backgrounds */
-            --dark-text: #000000; /* Similar to text-color for general body */
-            --border-color: #333740; /* Darker border color */
-            --shadow: rgba(0, 0, 0, 0.2); /* Dark shadow for depth */
-            --input-bg: #25282e; /* Specific background for input fields */
-        }
+<title>Planning Pivot</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* TÄYSIN TUMMA TEEMA - CSS VARIABLES */
+:root {
+--bg-body: #000000; /* Täysin musta tausta bodylle */
+--bg-container: #121212; /* Hyvin tumma harmaa säiliöille */
+--bg-element: #1e1e1e; /* Hieman vaaleampi elementeille */
+--bg-hover: #333333; /* Hover-efekti */
+--accent-color: #4a90e2; /* Sininen korostusväri */
+--text-white: #ffffff; /* Puhtaan valkoinen teksti */
+--border-color: #333333; /* Tumma reunus */
+}
 
-        body {
-            font-family: 'Poppins', sans-serif; /* Use Poppins font */
-            margin: 0;
-            background-color: var(--secondary-bg); /* Dark body background */
-            color: var(--dark-text); /* Light text color */
-        }
-        header {
-            background-color: var(--primary-bg); /* Dark header background */
-            padding: 20px 40px;
-            border-bottom: 1px solid var(--border-color); /* Dark border */
-            box-shadow: 0 2px 4px var(--shadow); /* Dark shadow */
-        }
-        h1 {
-            margin: 0;
-            font-size: 1.8em;
-            color: white; /* White text for main heading */
-            font-weight: 600; /* Bold from graph21.html h2 */
-        }
-        .main-container {
-            padding: 30px 40px;
-        }
-        .controls {
-            margin-bottom: 25px;
-            display: flex;
-            gap: 12px;
-        }
-        .btn {
-            background-color: var(--accent-color); /* Accent color for buttons */
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1em;
-            transition: background-color 0.3s ease;
-            font-weight: 600; /* Bold from graph21.html button */
-        }
-        .btn:hover {
-            background-color: #357abd; /* Darker accent on hover */
-        }
-        #pivot-container {
-            width: 100%;
-            overflow: auto;
-            background-color: var(--primary-bg); /* Dark background for pivot table container */
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px var(--shadow); /* Dark shadow */
-            color: var(--text-color); /* Ensure text color is light */
-        }
-        
-        /* Pivottable.js specific overrides to match dark theme */
-        .pvtTable {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .pvtTable thead tr th, .pvtTable tbody tr th, .pvtTable tbody tr td {
-            padding: 12px;
-            font-size: 0.95em;
-            border: 1px solid var(--border-color); /* Dark border */
-            text-align: left;
-            color: var(--text-color); /* Light text */
-        }
-        .pvtVal, .pvtTotal {
-            text-align: right;
-            cursor: pointer;
-            /* Ensure numbers are displayed with consistent style */
-            font-feature-settings: "tnum"; /* Tabular lining for numbers */
-            font-variant-numeric: tabular-nums;
-        }
-        .pvtUi {
-            border: 1px solid var(--border-color); /* Dark border for UI container */
-            border-radius: 6px;
-            background-color: var(--primary-bg); /* Dark UI background */
-            color: var(--text-color); /* Light text for UI elements */
-            padding: 15px; /* Add some padding to the UI itself */
-        }
-        .pvtAxisContainer, .pvtVals {
-             background-color: var(--input-bg); /* Darker background for drag/drop areas */
-             border: 1px solid var(--border-color); /* Border to define areas */
-             border-radius: 5px;
-             padding: 10px;
-             min-height: 40px; /* Ensure visibility even if empty */
-             margin: 5px; /* Spacing between UI elements */
-        }
-        .pvtAxisContainer.pvtHorizList {
-            margin-bottom: 10px; /* Space below horizontal lists */
-        }
-        .pvtVertList {
-            min-width: 120px; /* Give vertical lists some width */
-        }
-        .pvtAxisContainer label.pvtUnused { /* Styling for the labels/fields that can be dragged */
-            background-color: #2f343d; /* Darker grey for draggable items */
-            color: var(--text-color);
-            border: 1px solid #444;
-            border-radius: 4px;
-            padding: 5px 10px;
-            margin: 3px;
-            font-size: 0.85em;
-            cursor: grab; /* Indicate draggable */
-        }
-        .pvtDropdown, .pvtDropdownValue, .pvtFilter { /* Style for dropdowns and filter buttons within pivotUI */
-            background-color: var(--input-bg);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            border-radius: 5px;
-            padding: 8px;
-            margin: 5px;
-            font-family: 'Poppins', sans-serif;
-            font-size: 0.9em;
-            cursor: pointer;
-        }
-        .pvtRowLabel, .pvtColLabel {
-            background-color: #000000; /* Darker grey for labels */
-            font-weight: bold;
-            color: var(--text-color);
-        }
-        .pvtGrandTotal {
-            background-color: #333d47; /* Slightly distinct dark color for grand totals */
-            font-weight: bold;
-            color: white; /* White text for grand totals */
-        }
-        .pvtTotal, .pvtTotalLabel, .pvtRowTotal, .pvtColTotal {
-            background-color: #2a313b; /* Another distinct dark color for totals */
-            font-weight: bold;
-            color: var(--text-color);
-        }
-        .pvt-expander {
-            cursor: pointer;
-            user-select: none;
-            font-family: monospace;
-            font-size: 1.1em;
-            padding-right: 5px;
-            color: var(--accent-color); /* Accent color for expander icon */
-        }
-        /* Style for the inline editable input within cells */
-        #pivot-container input[type='number'] {
-            width: 90px;
-            text-align: right;
-            font-size: 1em;
-            border: 1px solid var(--accent-color); /* Accent border for active input */
-            background-color: var(--primary-bg); /* Darker background */
-            color: white; /* White text for editable value */
-            padding: 5px;
-            border-radius: 3px;
-            box-sizing: border-box;
-        }
-    </style>
-    <!-- Dependencies -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="https://pivottable.js.org/dist/pivot.css">
-    <script type="text/javascript" src="https://pivottable.js.org/dist/pivot.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+body {
+        font-family: 'Poppins', sans-serif;
+        font-size: 1.0em;
+        margin: 0;
+        background-color: var(--bg-body);
+        color: var(--text-white);
+    }
 
+    header {
+        background-color: var(--bg-container);
+        padding: 20px 40px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    h1 {
+        margin: 0;
+        font-size: 1.8em;
+        color: var(--text-white);
+        font-weight: 600;
+    }
+
+    .main-container {
+        padding: 30px 40px;
+    }
+
+    .controls {
+        margin-bottom: 25px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        background-color: var(--accent-color);
+        color: var(--text-white);
+        border: none;
+        padding: 12px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 600;
+    }
+
+    .btn:hover {
+        background-color: #357abd;
+    }
+
+    #pivot-container {
+        width: 100%;
+        overflow: auto;
+        background-color: var(--bg-container);
+        padding: 20px;
+        border-radius: 8px;
+        border: 2px solid var(--border-color);
+        box-sizing: border-box;
+        color: var(--text-white);
+    }
+
+    /* --- PIVOT TABLE STYLES (FORCE DARK & WHITE TEXT) --- */
+
+    /* Pakota kaikki teksti valkoiseksi pivot-taulukon sisällä */
+    #pivot-container * {
+        color: var(--text-white) !important;
+    }
+
+    /* Taulukon perusrakenne */
+    table.pvtTable {
+        background-color: var(--bg-container) !important;
+        border-collapse: collapse;
+    }
+
+    /* Otsikot ja solut */
+    .pvtTable thead tr th, 
+    .pvtTable tbody tr th, 
+    .pvtTable tbody tr td {
+        background-color: var(--bg-container) !important;
+        border: 1px solid var(--border-color) !important;
+        padding: 10px;
+    }
+
+    /* Rivi- ja sarakeotsikot (tummempi tausta erottuvuuden vuoksi) */
+    .pvtRowLabel, .pvtColLabel {
+        font-size: 1.2em !important; 
+        background-color: #000000 !important;
+        font-weight: bold;
+    }
+
+    /* Arvosolut */
+    .pvtVal {
+        font-size: 1.2em !important; 
+        background-color: var(--bg-container) !important;
+        cursor: pointer;
+        touch-action: manipulation; /* Estää zoomauksen mobiilissa */
+    }
+
+    /* Yhteissummat */
+    .pvtTotal, .pvtGrandTotal {
+        font-size: 1.2em !important; 
+        background-color: #1a1a1a !important; /* Hieman eri sävy */
+        font-weight: bold;
+    }
+
+    /* Hover-efekti soluille */
+    .pvtVal:hover, .pvtTotal:hover, .pvtGrandTotal:hover {
+        background-color: var(--bg-hover) !important;
+    }
+
+    /* --- UI ELEMENTS (Drag & Drop alueet) --- */
+    
+    .pvtAxisContainer, .pvtVals {
+        background-color: var(--bg-element) !important;
+        border: 1px solid var(--border-color) !important;
+        padding: 10px;
+    }
+
+    /* Raahattavat laatikot (Attributes) */
+    .pvtAxisContainer li span.pvtAttr {
+        background-color: #333 !important;
+        border: 1px solid #555 !important;
+        border-radius: 4px;
+        padding: 5px 10px;
+    }
+
+    /* --- DROPDOWNS (ALASVETOVALIKOT) --- */
+
+    /* Table, Sum ja Euros valikot */
+    #pivot-container select, 
+    .pvtDropdown, 
+    .pvtRenderer, 
+    .pvtAggregator, 
+    .pvtAttrDropdown {
+        background-color: var(--bg-element) !important;
+        color: var(--text-white) !important;
+        border: 1px solid var(--border-color) !important;
+        padding: 5px;
+        cursor: pointer;
+    }
+
+    /* Valikon sisällä olevat vaihtoehdot (options) */
+    #pivot-container select option {
+        background-color: #000000 !important;
+        color: var(--text-white) !important;
+    }
+
+    /* --- INPUTS --- */
+
+    /* Muokattava input-kenttä solun sisällä */
+    #pivot-container input[type='number'] {
+        background-color: #000000 !important;
+        border: 1px solid var(--accent-color) !important;
+        color: white !important;
+        padding: 5px;
+        width: 90px;
+        text-align: right;
+    }
+
+    /* Kolmiot ja ikonit */
+    .pvtTriangle {
+        border-top-color: white !important; /* Varmista että nuolet näkyy */
+        border-bottom-color: white !important;
+    }
+
+    /* --- FILTER POPUP BOX --- */
+    
+    .pvtFilterBox {
+        background-color: var(--bg-element) !important;
+        border: 1px solid #555 !important;
+        color: white !important;
+    }
+
+    .pvtFilterBox h4 {
+        background-color: #000000 !important;
+        border-bottom: 1px solid #555 !important;
+        margin: 0;
+        padding: 5px;
+    }
+
+    /* Haku-kenttä filtterissä */
+    .pvtFilterBox input[type='text'] {
+        background-color: #000000 !important;
+        color: white !important;
+        border: 1px solid #555 !important;
+    }
+
+    /* Checkbox-lista filtterissä */
+    .pvtCheckContainer {
+        background-color: var(--bg-element) !important;
+        border: 1px solid #555 !important;
+    }
+
+    /* Painikkeet filtterissä (OK / Cancel) */
+    .pvtFilterBox button {
+        background-color: var(--accent-color) !important;
+        color: white !important;
+        border: none;
+        padding: 5px 10px;
+        margin-top: 5px;
+        cursor: pointer;
+    }
+    
+    .pvtFilterBox button:hover {
+        background-color: #357abd !important;
+    }
+
+</style>
+<!-- Dependencies -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+
+<!-- jQuery UI Touch Punch: Enables drag/drop on touch screens -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
+
+<link rel="stylesheet" type="text/css" href="https://pivottable.js.org/dist/pivot.css">
+<script type="text/javascript" src="https://pivottable.js.org/dist/pivot.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 </head>
 <body>
-    <header>
-        <h1>Planning Pivot</h1>
-    </header>
-
-    <div class="main-container">
-        <div class="controls">
-            <button class="btn" onclick="document.getElementById('csv-import').click();">Import CSV</button>
-            <input type="file" id="csv-import" style="display:none;" accept=".csv">
-            <button class="btn" id="export-csv">Export Updated CSV</button>
-        </div>
-
-        <div id="pivot-container"></div>
+<header>
+<h1>Planning Pivot</h1>
+</header>
+<div class="main-container">
+    <div class="controls">
+        <button class="btn" onclick="document.getElementById('csv-import').click();">Import CSV</button>
+        <input type="file" id="csv-import" style="display:none;" accept=".csv">
+        <button class="btn" id="export-csv">Export Updated CSV</button>
     </div>
 
-    <script>
-        let rawData = [
-            { months: 'January', accounts: 'Sales', cost_centers: 'CC1', euros: 1500 },
-            { months: 'January', accounts: 'Marketing', cost_centers: 'CC1', euros: 800 },
-            { months: 'January', accounts: 'Sales', cost_centers: 'CC2', euros: 1200 },
-            { months: 'February', accounts: 'Sales', cost_centers: 'CC1', euros: 1800 },
-            { months: 'February', accounts: 'Marketing', cost_centers: 'CC2', euros: 1000 },
-            { months: 'March', accounts: 'Sales', cost_centers: 'CC2', euros: 2200 },
-            { months: 'March', accounts: 'HR', cost_centers: 'CC1', euros: 750 },
-            { months: 'April', accounts: 'Sales', cost_centers: 'CC1', euros: 2000 },
-        ];
+    <div id="pivot-container"></div>
+</div>
 
-        let collapsedRows = {};
+<script>
+    let rawData = [
+        { months: 'P1', accounts: '1 Sales', cost_centers: 'CC1', euros: 1500 },
+        { months: 'P1', accounts: '3 Marketing', cost_centers: 'CC1', euros: 800 },
+        { months: 'P1', accounts: '1 Sales', cost_centers: 'CC2', euros: 1200 },
+        { months: 'P2', accounts: '1 Sales', cost_centers: 'CC1', euros: 1800 },
+        { months: 'P2', accounts: '3 Marketing', cost_centers: 'CC2', euros: 1000 },
+        { months: 'P3', accounts: '1 Sales', cost_centers: 'CC2', euros: 2200 },
+        { months: 'P3', accounts: '2 HR', cost_centers: 'CC1', euros: 750 },
+        { months: 'P4', accounts: '1 Sales', cost_centers: 'CC1', euros: 2000 },
+    ];
 
-        function makeRowsCollapsible() {
-            const pivotState = $("#pivot-container").data("pivotUIOptions");
-            // Only apply collapsible rows if there's at least one row dimension defined
-            if (!pivotState || pivotState.rows.length === 0) return;
+    /**
+     * Tämä funktio poistaa rivien yhdistämisen (rowspan).
+     * Se kopioi otsikon (esim. CC1) jokaiselle riville, jotta näkymä on "litteä".
+     */
+    function ungroupRowHeaders() {
+        const $rows = $('#pivot-container .pvtTable tbody tr');
+        
+        $rows.each(function(rowIndex) {
+            const $row = $(this);
+            const $headers = $row.find('th.pvtRowLabel');
 
-            // Loop through all row labels at the top level (aria-level="0")
-            $('.pvtRowLabel[aria-level="0"]').each(function() {
-                const $label = $(this);
-                // Extract the row key, cleaning up any existing expander text
-                const rowKey = $label.text().replace(/\[[+-]\]\s*/g, '').trim();
-                const isCollapsed = collapsedRows[rowKey];
+            $headers.each(function(colIndex) {
+                const $th = $(this);
+                const rowspan = parseInt($th.attr('rowspan') || 1);
 
-                // Remove any existing expander to prevent duplicates on refresh
-                $label.find('.pvt-expander').remove();
+                if (rowspan > 1) {
+                    $th.attr('rowspan', 1);
 
-                // Create and prepend the new expander toggle
-                const toggle = $(`<span class="pvt-expander">${isCollapsed ? '[+]' : '[-]'}</span>`);
-                $label.prepend(toggle);
-
-                // If this row was previously collapsed, hide its children
-                if (isCollapsed) {
-                    let $currentRow = $label.closest('tr');
-                    $currentRow.nextAll('tr').each(function() {
-                        const $nextRow = $(this);
-                        // Hide all subsequent rows that are children of the current row (i.e., have a higher aria-level)
-                        if (parseInt($nextRow.find('.pvtRowLabel').attr('aria-level')) > 0) {
-                            $nextRow.hide();
+                    for (let r = 1; r < rowspan; r++) {
+                        const $targetRow = $rows.eq(rowIndex + r);
+                        const $clone = $th.clone();
+                        
+                        const $targetHeaders = $targetRow.find('th.pvtRowLabel');
+                        
+                        if (colIndex < $targetHeaders.length) {
+                            $targetHeaders.eq(colIndex).before($clone);
                         } else {
-                            // Stop when we hit a row that is not a child (same or lower level)
-                            return false;
-                        }
-                    });
-                }
-            });
-        }
-
-
-        // Global pivot table configuration
-        const pivotConfig = {
-            rows: ['months', 'accounts'],
-            cols: ['cost_centers'],
-            aggregatorName: 'Sum',
-            vals: ['euros'],
-            // Call makeRowsCollapsible after each refresh
-            onRefresh: makeRowsCollapsible,
-            // Custom renderer for number formatting (optional but good for consistency)
-            renderers: $.extend($.pivotUtilities.renderers,
-                $.pivotUtilities.plotly_renderers),
-            localeStrings: {
-                sum: "Sum",
-                count: "Count",
-                average: "Average",
-                sumOverSum: "Sum over Sum",
-                eightyPctMarginOfError: "80% MoE",
-                rowLabel: "Row Label",
-                colLabel: "Col Label",
-                value: "Value",
-                noValue: "No Value",
-                "Grand Total": "Grand Total"
-            }
-        };
-
-        function drawPivot(inputData) {
-            // Re-draw the pivot table with current data and config
-            $("#pivot-container").pivotUI(inputData, pivotConfig, false, "en"); // Added locale "en"
-        }
-
-        $(function(){
-            // Initial draw of the pivot table
-            drawPivot(rawData);
-            
-            // Double-click handler for editable cells
-            $('#pivot-container').on('dblclick', '.pvtVal, .pvtTotal', function() {
-                const $this = $(this);
-                // Prevent multiple inputs on the same cell
-                if ($this.find('input').length) return;
-
-                const pivotState = $("#pivot-container").data("pivotUIOptions");
-                const filters = {};
-                
-                // Get Row Keys
-                const rowLabelCells = $this.closest('tr').find('.pvtRowLabel');
-                pivotState.rows.forEach((key, i) => {
-                    // Only get the values from labels that actually exist for this row
-                    if (i < rowLabelCells.length && $(rowLabelCells[i]).text()) {
-                        filters[key] = $(rowLabelCells[i]).text().replace(/\[[+-]\]\s*/g, '').trim();
-                    }
-                });
-
-                // Get Col Keys (Robust Method)
-                const colIndex = $this.index();
-                // If it's not a row total cell, determine column filters
-                if (!$this.hasClass('pvtRowTotal')) {
-                    const $theadRows = $this.closest('table').find('thead > tr');
-                    pivotState.cols.forEach((key, i) => {
-                        if (i < $theadRows.length) {
-                            let $headerCell = null;
-                            // Iterate through header cells of the current column dimension row
-                            $theadRows.eq(i).find('th').each(function() {
-                                const $th = $(this);
-                                const start = $th.index(); // Starting column index of this header cell
-                                const span = $th.attr('colspan') ? parseInt($th.attr('colspan')) : 1; // Span of this header cell
-                                // Check if the target cell's column index falls within this header cell's span
-                                if (colIndex >= start && colIndex < start + span) {
-                                    $headerCell = $th;
-                                    return false; // Found the correct header cell, break loop
-                                }
-                            });
-                            // If a header cell was found and it's a column label (not an empty cell), add to filters
-                            if ($headerCell && $headerCell.hasClass('pvtColLabel') && $headerCell.text()) {
-                                filters[key] = $headerCell.text().trim();
-                            }
-                        }
-                    });
-                }
-
-                // Get the current value, cleaning up locale formatting
-                const oldValue = parseFloat($this.text().replace(/,/g, '')) || 0;
-                // Create an input field for editing
-                const input = $(`<input type='number' value='${oldValue}' />`); // Style moved to CSS
-                $this.html(input); // Replace cell content with input
-                input.focus().select(); // Focus and select text
-
-                input.on('blur', function() {
-                    const newValue = parseFloat($(this).val());
-                    if (isNaN(newValue)) {
-                        // If input is not a number, revert to old value
-                        $this.text(oldValue.toLocaleString('en'));
-                        return;
-                    }
-                    
-                    if ($this.hasClass('pvtVal')) {
-                        // --- ACTION 1: DIMENSION-LEVEL EDIT (Update or Add a single data point) ---
-                        const allDimKeys = [...pivotState.rows, ...pivotState.cols].filter(k => filters[k]); // Only include keys that actually have a filter value
-                        const hasAllKeys = allDimKeys.length === Object.keys(filters).length; // Check if we have a complete address for all dimensions in play
-
-                        let itemToUpdate = rawData.find(item => {
-                            for (const key in filters) {
-                                // Check if the item matches all current filters
-                                if (item[key] != filters[key]) return false;
-                            }
-                            return true;
-                        });
-
-                        if (itemToUpdate) {
-                            itemToUpdate.euros = newValue; // Update existing item
-                        } else if (hasAllKeys && allDimKeys.length > 0) { // Only add if we have a complete, non-empty address
-                            const newItem = { ...filters, euros: newValue };
-                            rawData.push(newItem); // Add new item if not found
-                        }
-
-                    } else {
-                        // --- ACTION 2: SUM-LEVEL EDIT (Distribute Down to underlying data points) ---
-                        // Find all data points that contribute to this sum
-                        const dataToUpdate = rawData.filter(item => {
-                            for (const key in filters) {
-                                if (item[key] != filters[key]) return false;
-                            }
-                            return true;
-                        });
-
-                        if (dataToUpdate.length > 0) {
-                            const currentSum = dataToUpdate.reduce((sum, item) => sum + (item.euros || 0), 0);
-                            if (currentSum === 0) {
-                                // If current sum is zero, distribute newValue evenly
-                                const perItemValue = newValue / dataToUpdate.length;
-                                dataToUpdate.forEach(item => { item.euros = perItemValue; });
+                            const $vals = $targetRow.find('.pvtVal, .pvtTotal, .pvtRowTotal, .pvtGrandTotal');
+                            if ($vals.length > 0) {
+                                $vals.first().before($clone);
                             } else {
-                                // If current sum is non-zero, distribute proportionally
-                                const ratio = newValue / currentSum;
-                                dataToUpdate.forEach(item => { item.euros = (item.euros || 0) * ratio; });
+                                $targetRow.append($clone);
                             }
                         }
                     }
-                    
-                    drawPivot(rawData); // Re-draw the pivot table to reflect changes
-                });
-            });
-
-            // --- Import CSV handler ---
-            $('#csv-import').on('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    Papa.parse(file, {
-                        header: true,
-                        dynamicTyping: true, // Automatically convert numbers, booleans
-                        skipEmptyLines: true,
-                        complete: function(results) {
-                            // Ensure 'euros' column is numeric, convert if needed
-                            results.data.forEach(row => {
-                                if (typeof row.euros === 'string') {
-                                    row.euros = parseFloat(row.euros.replace(/,/g, '')); // Clean up commas before parsing
-                                }
-                                if (isNaN(row.euros)) {
-                                    row.euros = 0; // Default to 0 if parsing fails
-                                }
-                            });
-                            rawData = results.data;
-                            collapsedRows = {}; // Reset collapsed state on new data import
-                            drawPivot(rawData);
-                            e.target.value = ''; // Clear file input
-                        }
-                    });
                 }
-            });
-
-            // --- Export CSV handler ---
-            $('#export-csv').on('click', function() {
-                const csv = Papa.unparse(rawData); // Convert rawData back to CSV string
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                const url = URL.createObjectURL(blob);
-                link.setAttribute("href", url);
-                link.setAttribute("download", "budget_data_export.csv"); // Filename for download
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url); // Clean up the object URL
-            });
-            
-            // --- Row expander/collapser handler ---
-            $('#pivot-container').on('click', '.pvt-expander', function(e) {
-                e.stopPropagation(); // Prevent dblclick event on parent cell
-                const $expander = $(this);
-                const $label = $expander.closest('.pvtRowLabel');
-                const $row = $label.closest('tr');
-                // Clean key from expander text for storage
-                const rowKey = $label.text().replace(/\[[+-]\]/g, '').trim();
-                const isCollapsing = $expander.text() === '[-]'; // Check if we're collapsing
-
-                // Update expander icon and collapsedRows state
-                $expander.text(isCollapsing ? '[+]' : '[-]');
-                if (isCollapsing) collapsedRows[rowKey] = true;
-                else delete collapsedRows[rowKey];
-
-                const currentLevel = parseInt($label.attr('aria-level'));
-
-                // Iterate through subsequent rows to show/hide children
-                $row.nextAll('tr').each(function() {
-                    const $nextRow = $(this);
-                    const $nextLabel = $nextRow.find('.pvtRowLabel');
-                    if($nextLabel.length === 0) return true; // Continue if not a row label row
-
-                    const nextLevel = parseInt($nextLabel.attr('aria-level'));
-
-                    if (nextLevel > currentLevel) {
-                         if (isCollapsing) {
-                             $nextRow.hide(); // Hide children
-                         } else {
-                             // If expanding, show direct children, but respect their own collapse state
-                             if (nextLevel === currentLevel + 1) {
-                                $nextRow.show();
-                                const nextRowKey = $nextLabel.text().replace(/\[[+-]\]/g, '').trim();
-                                // If a direct child itself was collapsed, ensure its expander shows '+' and its children are hidden
-                                if(collapsedRows[nextRowKey]) {
-                                     $nextRow.find('.pvt-expander').text('[+]');
-                                     let tempRow = $nextRow.next();
-                                     while(tempRow.length > 0 && parseInt(tempRow.find('.pvtRowLabel').attr('aria-level')) > nextLevel) {
-                                         tempRow.hide();
-                                         tempRow = tempRow.next();
-                                     }
-                                }
-                             }
-                         }
-                    } else {
-                        // Stop when we reach a row at the same or higher level
-                        return false;
-                    }
-                });
             });
         });
-    </script>
+    }
+
+    // Global pivot table configuration
+    const pivotConfig = {
+        rows: ['cost_centers','accounts'],
+        cols: ['months'],
+        aggregatorName: 'Sum',
+        vals: ['euros'],
+        onRefresh: ungroupRowHeaders,
+        renderers: $.extend($.pivotUtilities.renderers,
+            $.pivotUtilities.plotly_renderers),
+        localeStrings: {
+            sum: "Sum",
+            count: "Count",
+            average: "Average",
+            sumOverSum: "Sum over Sum",
+            eightyPctMarginOfError: "80% MoE",
+            rowLabel: "Row Label",
+            colLabel: "Col Label",
+            value: "Value",
+            noValue: "No Value",
+            "Grand Total": "Grand Total"
+        }
+    };
+
+    function drawPivot(inputData) {
+        $("#pivot-container").pivotUI(inputData, pivotConfig, false, "en");
+    }
+
+    $(function(){
+        // Initial draw of the pivot table
+        drawPivot(rawData);
+        
+        // Double-click handler for editable cells.
+        // HUOM: Lisätty .pvtGrandTotal, jotta myös Grand Total -solu aktivoituu.
+        $('#pivot-container').on('dblclick', '.pvtVal, .pvtTotal, .pvtGrandTotal', function() {
+            const $this = $(this);
+            if ($this.find('input').length) return;
+
+            const pivotState = $("#pivot-container").data("pivotUIOptions");
+            const filters = {};
+            
+            // --- GRAND TOTAL CHECK ---
+            // Jos solu on Grand Total (oikea alanurkka), emme halua asettaa mitään filttereitä.
+            // Tyhjä filters-objekti tarkoittaa "kaikki data", jolloin muutos jaetaan koko taulukkoon.
+            const isGrandTotal = $this.hasClass('pvtGrandTotal');
+
+            if (!isGrandTotal) {
+                // --- HAE RIVIEN FILTTERIT (Vain jos EI ole Grand Total) ---
+                const rowLabelCells = $this.closest('tr').find('.pvtRowLabel');
+                pivotState.rows.forEach((key, i) => {
+                    if (i < rowLabelCells.length && $(rowLabelCells[i]).text()) {
+                        filters[key] = $(rowLabelCells[i]).text().trim();
+                    }
+                });
+
+                // --- HAE SARAKKEIDEN FILTTERIT ---
+                // Jos kyseessä ei ole rivisumma (Row Total), haetaan sarakkeet.
+                if (!$this.hasClass('pvtRowTotal')) {
+                    const dataColumnIndex = $this.prevAll('.pvtVal, .pvtTotal').length;
+                    const $theadRows = $this.closest('table').find('thead > tr');
+                    
+                    pivotState.cols.forEach((colKey, colDimIndex) => {
+                        const $headerRow = $theadRows.eq(colDimIndex);
+                        const $colHeaders = $headerRow.find('th.pvtColLabel');
+                        let currentDataColCount = 0;
+                        
+                        $colHeaders.each(function() {
+                            const $th = $(this);
+                            const span = parseInt($th.attr('colspan') || 1);
+                            
+                            if (dataColumnIndex >= currentDataColCount && dataColumnIndex < currentDataColCount + span) {
+                                filters[colKey] = $th.text().trim();
+                                return false; 
+                            }
+                            currentDataColCount += span;
+                        });
+                    });
+                }
+            }
+            // Jos isGrandTotal on tosi, koodi hyppää suoraan tänne ja filters on {}.
+
+            const oldValue = parseFloat($this.text().replace(/,/g, '')) || 0;
+            const input = $(`<input type='number' value='${oldValue}' />`);
+            $this.html(input); 
+            input.focus().select(); 
+
+            input.on('keydown', function(e) {
+                if (e.key === 'Enter' || e.keyCode === 13) {
+                    e.preventDefault();
+                    $(this).blur(); 
+                }
+            });
+
+            input.on('blur', function() {
+                const newValue = parseFloat($(this).val());
+                
+                if (isNaN(newValue)) {
+                    $this.text(oldValue.toLocaleString('en'));
+                    return;
+                }
+                
+                if ($this.hasClass('pvtVal')) {
+                    // ACTION 1: Yksittäinen arvosolu
+                    const allDimKeys = [...pivotState.rows, ...pivotState.cols].filter(k => filters[k]);
+                    const hasAllKeys = allDimKeys.length === Object.keys(filters).length;
+
+                    let itemToUpdate = rawData.find(item => {
+                        for (const key in filters) {
+                            if (item[key] != filters[key]) return false;
+                        }
+                        return true;
+                    });
+
+                    if (itemToUpdate) {
+                        itemToUpdate.euros = newValue;
+                    } else if (hasAllKeys && allDimKeys.length > 0) {
+                        const newItem = { ...filters, euros: newValue };
+                        rawData.push(newItem);
+                    }
+
+                } else {
+                    // ACTION 2: Summa-tason muokkaus (Row Total, Col Total, tai Grand Total)
+                    // Jos filters on tyhjä (Grand Total), tämä hakee kaiken datan.
+                    const dataToUpdate = rawData.filter(item => {
+                        for (const key in filters) {
+                            if (item[key] != filters[key]) return false;
+                        }
+                        return true;
+                    });
+
+                    if (dataToUpdate.length > 0) {
+                        const currentSum = dataToUpdate.reduce((sum, item) => sum + (item.euros || 0), 0);
+                        if (currentSum === 0) {
+                            const perItemValue = newValue / dataToUpdate.length;
+                            dataToUpdate.forEach(item => { item.euros = perItemValue; });
+                        } else {
+                            const ratio = newValue / currentSum;
+                            dataToUpdate.forEach(item => { item.euros = (item.euros || 0) * ratio; });
+                        }
+                    }
+                }
+                
+                drawPivot(rawData); 
+            });
+        });
+
+        // --- Import CSV handler ---
+        $('#csv-import').on('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                Papa.parse(file, {
+                    header: true,
+                    dynamicTyping: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        results.data.forEach(row => {
+                            if (typeof row.euros === 'string') {
+                                row.euros = parseFloat(row.euros.replace(/,/g, ''));
+                            }
+                            if (isNaN(row.euros)) {
+                                row.euros = 0;
+                            }
+                        });
+                        rawData = results.data;
+                        drawPivot(rawData);
+                        e.target.value = '';
+                    }
+                });
+            }
+        });
+
+        // --- Export CSV handler ---
+        $('#export-csv').on('click', function() {
+            const csv = Papa.unparse(rawData);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "budget_data_export.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        });
+    });
+</script>
 </body>
 </html>
